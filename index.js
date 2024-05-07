@@ -80,6 +80,10 @@ app.use("/api/", require("./Routes/HRPanel/empoyee"));
 app.use("/api/", require("./Routes/HRPanel/EmpolyeeAppoiment"));
 app.use("/api/", require("./Routes/HRPanel/compansetion"));
 app.use("/api/", require("./Routes/HRPanel/backgroundVerification"));
+app.use("/api/", require("./Routes/OPDPatientRoutes/OPDPatientRoutes"));
+app.use("/api/", require("./Routes/OpdRoutes/OpdRoutes"));
+app.use("/api/", require("./Routes/MedicineRoutes/MedicineRoutes"));
+app.use("/api/", require("./Routes/TestRoutes/TestRoutes"));
 
 app.get("/home", (req, res) => {
   res.send("this is hms main page");
