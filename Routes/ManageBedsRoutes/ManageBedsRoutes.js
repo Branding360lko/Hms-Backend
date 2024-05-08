@@ -50,6 +50,10 @@ Router.post("/ManageBeds-POST", async (req, res) => {
     bedSubType,
     bedFloor,
     bedCharges,
+    nursingCharges,
+    EMOCharges,
+    bioWasteCharges,
+    sanitizationCharges,
     bedAvailableOrNot,
   } = req.body;
 
@@ -61,6 +65,10 @@ Router.post("/ManageBeds-POST", async (req, res) => {
       bedSubType: bedSubType,
       bedFloor: bedFloor,
       bedCharges: bedCharges,
+      nursingCharges: nursingCharges,
+      EMOCharges: EMOCharges,
+      bioWasteCharges: bioWasteCharges,
+      sanitizationCharges: sanitizationCharges,
       bedAvailableOrNot: bedAvailableOrNot,
     });
 
@@ -82,6 +90,10 @@ Router.put("/ManageBeds-PUT/:BedId", async (req, res) => {
     bedSubType,
     bedFloor,
     bedCharges,
+    nursingCharges,
+    EMOCharges,
+    bioWasteCharges,
+    sanitizationCharges,
     bedAvailableOrNot,
   } = req.body;
 
@@ -95,9 +107,17 @@ Router.put("/ManageBeds-PUT/:BedId", async (req, res) => {
         bedSubType: bedSubType ? bedSubType : ManageBedsModel.bedSubType,
         bedFloor: bedFloor ? bedFloor : ManageBedsModel.bedFloor,
         bedCharges: bedCharges ? bedCharges : ManageBedsModel.bedCharges,
-        bedAvailableOrNot: bedAvailableOrNot
-          ? bedAvailableOrNot
-          : ManageBedsModel.bedAvailableOrNot,
+        nursingCharges: nursingCharges
+          ? nursingCharges
+          : ManageBedsModel.nursingCharges,
+        EMOCharges: EMOCharges ? EMOCharges : ManageBedsModel.EMOCharges,
+        bioWasteCharges: bioWasteCharges
+          ? bioWasteCharges
+          : ManageBedsModel.bioWasteCharges,
+        sanitizationCharges: sanitizationCharges
+          ? sanitizationCharges
+          : ManageBedsModel.sanitizationCharges,
+        bedAvailableOrNot: bedAvailableOrNot,
       }
     );
 

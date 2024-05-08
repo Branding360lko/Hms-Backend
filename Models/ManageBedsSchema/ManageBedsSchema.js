@@ -14,7 +14,7 @@ const ManageBedsSchema = new Schema(
     },
     bedType: {
       type: String,
-      required: true,
+      // required: true,
     },
     bedSubType: {
       type: String,
@@ -24,6 +24,22 @@ const ManageBedsSchema = new Schema(
       required: true,
     },
     bedCharges: {
+      type: Number,
+      required: true,
+    },
+    nursingCharges: {
+      type: Number,
+      required: true,
+    },
+    EMOCharges: {
+      type: Number,
+      required: true,
+    },
+    bioWasteCharges: {
+      type: Number,
+      required: true,
+    },
+    sanitizationCharges: {
       type: Number,
       required: true,
     },
