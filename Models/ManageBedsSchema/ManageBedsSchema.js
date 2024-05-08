@@ -16,6 +16,9 @@ const ManageBedsSchema = new Schema(
       type: String,
       required: true,
     },
+    bedSubType: {
+      type: String,
+    },
     bedFloor: {
       type: String,
       required: true,

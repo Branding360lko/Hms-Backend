@@ -44,14 +44,21 @@ Router.get("/ManageBeds-GET-ONE/:bedId", async (req, res) => {
 });
 
 Router.post("/ManageBeds-POST", async (req, res) => {
-  const { bedNumber, bedType, bedFloor, bedCharges, bedAvailableOrNot } =
-    req.body;
+  const {
+    bedNumber,
+    bedType,
+    bedSubType,
+    bedFloor,
+    bedCharges,
+    bedAvailableOrNot,
+  } = req.body;
 
   try {
     const newBed = new ManageBedsModel({
       bedId: "bed" + generateUniqueId(),
       bedNumber: bedNumber,
       bedType: bedType,
+      bedSubType: bedSubType,
       bedFloor: bedFloor,
       bedCharges: bedCharges,
       bedAvailableOrNot: bedAvailableOrNot,
@@ -69,8 +76,14 @@ Router.post("/ManageBeds-POST", async (req, res) => {
 });
 
 Router.put("/ManageBeds-PUT/:BedId", async (req, res) => {
-  const { bedNumber, bedType, bedFloor, bedCharges, bedAvailableOrNot } =
-    req.body;
+  const {
+    bedNumber,
+    bedType,
+    bedSubType,
+    bedFloor,
+    bedCharges,
+    bedAvailableOrNot,
+  } = req.body;
 
   try {
     const id = req.params.BedId;
@@ -79,6 +92,7 @@ Router.put("/ManageBeds-PUT/:BedId", async (req, res) => {
       {
         bedNumber: bedNumber ? bedNumber : ManageBedsModel.bedNumber,
         bedType: bedType ? bedType : ManageBedsModel.bedType,
+        bedSubType: bedSubType ? bedSubType : ManageBedsModel.bedSubType,
         bedFloor: bedFloor ? bedFloor : ManageBedsModel.bedFloor,
         bedCharges: bedCharges ? bedCharges : ManageBedsModel.bedCharges,
         bedAvailableOrNot: bedAvailableOrNot
