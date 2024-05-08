@@ -1,8 +1,8 @@
 const express = require("express");
 
 const Router = express.Router();
-const cookie = require("cookie-parser");
-const OPD = require("../../Models/OPDSchema/OPDSchema");
+
+const IPD = require("../../Models/IPDSchema/IPDSchema");
 const multer = require("multer");
 const mongoose = require("mongoose");
 
@@ -25,52 +25,50 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ storage, fileFilter });
 
-Router.get("/OPD-GET-ALL", async (req, res) => {
+Router.get("/All-Ipd-Routes", async (req, res) => {
   try {
-    const opdData = await OPD.find();
-    if (!opdData) {
-      res.status(204).json({ message: "No Data Exits" });
+    const ipdData = await IPD.find({});
+    if (!ipdData) {
+      res.status(404).json("No Ipd Data Found");
     }
-    res.status(200).json({
-      message: "Data Fetch Successfully",
-      data: opdData,
-    });
+    return res
+      .status(200)
+      .json({ message: "Ipd Data Feteched Successfully", data: ipdData });
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }
 });
-Router.post("/OPD-Create", upload.none(), async (req, res) => {
-  const { medicine, test, Symptoms, Note, OpdPatientData, isPatientsChecked } =
+Router.post("/IPD-Create", upload.none(), async (req, res) => {
+  const { medicine, test, Symptoms, Note, ipdPatientData, isPatientsChecked } =
     req.body;
 
   try {
-    const opd = await OPD.create({
+    const ipd = await IPD.create({
       Note,
       Symptoms,
       medicine,
       test,
-      OpdPatientData,
+      ipdPatientData,
       isPatientsChecked,
     });
-    const opdData = await OPD.findById(opd?._id);
+    const ipdData = await IPD.findById(ipd?._id);
 
-    if (!opdData) {
-      res.status(500).json("Something went wrong while Saving the OPD Data");
+    if (!ipdData) {
+      res.status(500).json("Something went wrong while Saving the IPD Data");
     }
 
     return res
       .status(201)
-      .json({ message: "Data Created Successfully", data: opdData });
+      .json({ message: "Data Created Successfully", data: ipdData });
   } catch (error) {
-    console.log(error);
     res.status(500).json({ message: "Faild To Store Date" });
   }
 });
-Router.get("/get-one-opd-data/:Id", async (req, res) => {
+Router.get("/get-one-ipd-data/:Id", async (req, res) => {
   const Id = req.params.Id;
 
   try {
-    const OpdData = await OPD.aggregate([
+    const IpdData = await IPD.aggregate([
       {
         $match: { _id: mongoose.Types.ObjectId.createFromHexString(Id) },
       },
@@ -92,10 +90,10 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
       },
       {
         $lookup: {
-          from: "opdpatients",
-          localField: "OpdPatientData",
+          from: "ipdpatients",
+          localField: "IpdPatientData",
           foreignField: "_id",
-          as: "OpdPatientData1",
+          as: "IpdPatientData",
         },
       },
       {
@@ -105,32 +103,28 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
           Note: 1,
           "medicineData.Name": 1,
           "medicineData.Price": 1,
-
           "testData.TestName": 1,
-          OpdPatientData1: 1,
+          IpdPatientData: 1,
         },
       },
     ]);
 
-    console.log(OpdData);
-
-    if (OpdData.length === 0) {
+    if (IpdData.length === 0) {
       return res
         .status(404)
-        .json({ message: "No OPD record found with the provided ID" });
+        .json({ message: "No IPD record found with the provided ID" });
     }
 
-    return res.status(200).json(OpdData);
+    return res.status(200).json(IpdData);
   } catch (error) {
-    console.error("Error fetching OPD record:", error);
     res.status(500).json("Internal Server Error");
   }
 });
-Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
+Router.put("/update-one-Ipd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
   const { Symptoms, Note, test, medicine } = req.body;
   try {
-    const opdData = await OPD.findByIdAndUpdate(
+    const ipdData = await IPD.findByIdAndUpdate(
       { _id: Id },
       {
         medicine: medicine,
@@ -143,30 +137,31 @@ Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
         select: "-createdAt,-updatedAt",
       }
     );
-    if (!opdData) {
-      res.status(403).json({ message: "Faild To Update Opd Data" });
+    if (!ipdData) {
+      res.status(403).json({ message: "Faild To Update Ipd Data" });
     }
 
     return res
       .status(200)
-      .json({ message: "Opd Data Updated Successfully", data: opdData });
+      .json({ message: "Ipd Data Updated Successfully", data: ipdData });
   } catch (error) {
     res.status(500).json("Something Went Wrong", error);
   }
 });
-Router.post("/update-patient-checked/:Id", async (req, res) => {
+Router.post("/update-ipdPatient-checked/:Id", async (req, res) => {
   const Id = req.params.Id;
   try {
-    const opdPatientChecked = await OPD.findById({ _id: Id });
-    if (!opdPatientChecked) {
-      res.status(403).json("Failed While Fetching Patients Opd Data");
+    const ipdPatientChecked = await IPD.findById({ _id: Id });
+    if (!ipdPatientChecked) {
+      res.status(403).json("Failed While Fetching Patients Ipd Data");
     }
-    opdPatientChecked.isPatientsChecked = !opdPatientChecked.isPatientsChecked;
-    await opdPatientChecked.save({ validateBeforeSave: false });
+    ipdPatientChecked.isPatientsChecked = !ipdPatientChecked.isPatientsChecked;
+    await ipdPatientChecked.save({ validateBeforeSave: false });
 
-    return res.status(201).json({ message: "Successfully Opd Value Updated" });
+    return res.status(201).json({ message: "Successfully Ipd Value Updated" });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 module.exports = Router;

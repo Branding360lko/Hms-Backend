@@ -6,13 +6,13 @@ const OPDSchema = new Schema(
     medicine: [
       {
         type: Schema.Types.ObjectId,
-        ref: "medicines",
+        ref: "Medicine",
       },
     ],
     test: [
       {
         type: Schema.Types.ObjectId,
-        ref: "tests",
+        ref: "test",
       },
     ],
     Symptoms: {
@@ -21,9 +21,14 @@ const OPDSchema = new Schema(
     Note: {
       type: String,
     },
-    OpdData: {
+    OpdPatientData: {
       type: Schema.Types.ObjectId,
       ref: "OPDPatient",
+    },
+    isPatientsChecked: {
+      type: Boolean,
+      require: true,
+      default: false,
     },
   },
   { timestamps: true }
