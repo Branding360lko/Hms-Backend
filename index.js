@@ -83,6 +83,10 @@ app.use("/api/", require("./Routes/HRPanel/backgroundVerification"));
 app.use("/api/", require("./Routes/OPDPatientRoutes/OPDPatientRoutes"));
 app.use("/api/", require("./Routes/OpdRoutes/OpdRoutes"));
 app.use("/api/", require("./Routes/IPDRoutes/IPDRoutes"));
+app.use(
+  "/api/",
+  require("./Routes/EmergencyPatientsCheckRoutes/EmergencyPatientsCheckRoutes")
+);
 app.use("/api/", require("./Routes/MedicineRoutes/MedicineRoutes"));
 app.use("/api/", require("./Routes/TestRoutes/TestRoutes"));
 

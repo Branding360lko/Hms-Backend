@@ -61,7 +61,7 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       .status(201)
       .json({ message: "Data Created Successfully", data: ipdData });
   } catch (error) {
-    res.status(500).json({ message: "Faild To Store Date" });
+    res.status(500).json({ message: "internal Server Error" });
   }
 });
 Router.get("/get-one-ipd-data/:Id", async (req, res) => {

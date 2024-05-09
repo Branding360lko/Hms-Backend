@@ -72,4 +72,78 @@ Router.post("/add-medicine", async (req, res) => {
     res.status(500).json("Something went wrong");
   }
 });
+Router.get("/get-one-medicine/:Id", async (req, res) => {
+  const { Id } = req.params;
+  if (!Id) {
+    return req.status(403).json("No medicine Id is Provided");
+  }
+  try {
+    const medicineData = await Medicine.findById({ _id: Id });
+    if (!medicineData) {
+      return res
+        .status(403)
+        .json({ message: "No medicine Find By This Medicine Id" });
+    }
+    return res.status(200).json({
+      message: "Medicine Data Fetch Successfully",
+      data: medicineData,
+    });
+  } catch (error) {}
+});
+Router.put("/update-one-medicine-data/:Id", async (req, res) => {
+  const { Id } = req.params;
+  if (!Id) {
+    return req.status(403).json("No medicine Id is Provided");
+  }
+  const {
+    Description,
+    Dosage,
+    Manufacturer,
+    ExpiryDate,
+    Price,
+    Availability,
+    Category,
+    PrescriptionRequirement,
+    StorageConditions,
+    SideEffects,
+    Contraindications,
+    Warnings,
+    Precautions,
+    Instructions,
+  } = req.body;
+  try {
+    const medicineData = await Medicine.findByIdAndUpdate(
+      { _id: Id },
+      {
+        Description,
+        Dosage,
+        Manufacturer,
+        ExpiryDate,
+        Price,
+        Availability,
+        Category,
+        PrescriptionRequirement,
+        StorageConditions,
+        SideEffects,
+        Contraindications,
+        Warnings,
+        Precautions,
+        Instructions,
+      },
+      { new: true }
+    );
+    if (!medicineData) {
+      return res
+        .status(403)
+        .json({ message: "Faild To Update Medicine Data " });
+    }
+    return res.status(200).json({
+      message: "Medicine Data Updated Successfully",
+      data: medicineData,
+    });
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
+
 module.exports = Router;

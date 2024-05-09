@@ -42,7 +42,14 @@ Router.get("/OPD-GET-ALL", async (req, res) => {
 Router.post("/OPD-Create", upload.none(), async (req, res) => {
   const { medicine, test, Symptoms, Note, OpdPatientData, isPatientsChecked } =
     req.body;
-
+  console.log(
+    medicine,
+    test,
+    Symptoms,
+    Note,
+    OpdPatientData,
+    isPatientsChecked
+  );
   try {
     const opd = await OPD.create({
       Note,
