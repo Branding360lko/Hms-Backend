@@ -112,8 +112,10 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
           Note: 1,
           "medicineData.Name": 1,
           "medicineData.Price": 1,
+          "medicineData._id": 1,
 
           "testData.TestName": 1,
+          "testData._id": 1,
           OpdPatientData1: 1,
         },
       },
@@ -135,7 +137,7 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
 });
 Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
-  const { Symptoms, Note, test, medicine } = req.body;
+  const { Symptoms, Note, test, medicine, isPatientsChecked } = req.body;
   try {
     const opdData = await OPD.findByIdAndUpdate(
       { _id: Id },
@@ -144,6 +146,7 @@ Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
         Symptoms,
         Note,
         test,
+        isPatientsChecked,
       },
       {
         new: true,
@@ -153,7 +156,7 @@ Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
     if (!opdData) {
       res.status(403).json({ message: "Faild To Update Opd Data" });
     }
-
+    console.log(opdData);
     return res
       .status(200)
       .json({ message: "Opd Data Updated Successfully", data: opdData });
