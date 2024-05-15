@@ -38,6 +38,7 @@ Router.get("/All-Ipd-Routes", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+
 Router.post("/IPD-Create", upload.none(), async (req, res) => {
   const { medicine, test, Symptoms, Note, ipdPatientData, isPatientsChecked } =
     req.body;
@@ -91,9 +92,17 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
       {
         $lookup: {
           from: "ipdpatients",
-          localField: "IpdPatientData",
+          localField: "ipdPatientData",
           foreignField: "_id",
           as: "IpdPatientData",
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "ipdPatientData",
+          foreignField: "_id",
+          as: "patientsData",
         },
       },
       {
@@ -103,8 +112,11 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
           Note: 1,
           "medicineData.Name": 1,
           "medicineData.Price": 1,
-          "testData.TestName": 1,
+          "medicineData._id": 1,
+          "testData.Name": 1,
+          "testData._id": 1,
           IpdPatientData: 1,
+          patientsData: 1,
         },
       },
     ]);

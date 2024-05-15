@@ -25,6 +25,10 @@ const OPDSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "OPDPatient",
     },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: "doctors",
+    },
     isPatientsChecked: {
       type: Boolean,
       require: true,

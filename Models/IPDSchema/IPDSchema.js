@@ -21,9 +21,16 @@ const IPDSchema = new Schema(
     Note: {
       type: String,
     },
-    IpdPatientData: {
+    ipdPatientData: {
       type: Schema.Types.ObjectId,
       ref: "IPDPatient",
+    },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: "doctors",
+    },
+    VisitId: {
+      type: String,
     },
     isPatientsChecked: {
       type: Boolean,

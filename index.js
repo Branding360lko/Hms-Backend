@@ -89,6 +89,11 @@ app.use(
 );
 app.use("/api/", require("./Routes/MedicineRoutes/MedicineRoutes"));
 app.use("/api/", require("./Routes/TestRoutes/TestRoutes"));
+app.use("/api/", require("./Routes/PharmacyRoutes/PharmacyRoutes"));
+app.use(
+  "/api/",
+  require("./Routes/PharmacyEmployeeRoutes/PharmacyEmployeeRoutes")
+);
 
 app.get("/home", (req, res) => {
   res.send("this is hms main page");

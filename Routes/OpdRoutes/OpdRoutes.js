@@ -102,9 +102,10 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
           from: "opdpatients",
           localField: "OpdPatientData",
           foreignField: "_id",
-          as: "OpdPatientData1",
+          as: "OpdPatientData",
         },
       },
+
       {
         $project: {
           _id: 1,
@@ -114,14 +115,12 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
           "medicineData.Price": 1,
           "medicineData._id": 1,
 
-          "testData.TestName": 1,
+          "testData.Name": 1,
           "testData._id": 1,
-          OpdPatientData1: 1,
+          OpdPatientData: 1,
         },
       },
     ]);
-
-    console.log(OpdData);
 
     if (OpdData.length === 0) {
       return res
@@ -138,30 +137,30 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
 Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
   const { Symptoms, Note, test, medicine, isPatientsChecked } = req.body;
+  console.log(Symptoms, Note, test, medicine);
   try {
     const opdData = await OPD.findByIdAndUpdate(
       { _id: Id },
       {
-        medicine: medicine,
+        medicine,
         Symptoms,
         Note,
         test,
-        isPatientsChecked,
       },
       {
         new: true,
         select: "-createdAt,-updatedAt",
       }
     );
+    // const opdData = await OPD.findById({ _id: Id });
+    console.log(opdData);
     if (!opdData) {
       res.status(403).json({ message: "Faild To Update Opd Data" });
     }
     console.log(opdData);
-    return res
-      .status(200)
-      .json({ message: "Opd Data Updated Successfully", data: opdData });
+    return res.status(200).json({ message: "Opd Data Updated Successfully" });
   } catch (error) {
-    res.status(500).json("Something Went Wrong", error);
+    res.status(500).json({ message: "Something Went Wrong" });
   }
 });
 Router.post("/update-patient-checked/:Id", async (req, res) => {
