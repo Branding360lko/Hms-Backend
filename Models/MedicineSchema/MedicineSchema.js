@@ -16,8 +16,19 @@ const MedicineSchema = new Schema(
     Manufacturer: {
       type: String,
     },
+    BATCH: {
+      type: String,
+    },
     ExpiryDate: {
       type: String,
+    },
+    QTY: {
+      type: Number,
+      required: true,
+    },
+    Mrp: {
+      type: Number,
+      required: true,
     },
     Price: {
       type: Number,

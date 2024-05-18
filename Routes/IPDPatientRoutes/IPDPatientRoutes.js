@@ -29,6 +29,27 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.get("/IPDPatient-GET-ALL-with-patients-details", async (req, res) => {
+  try {
+    const ipdPatientData = await IPDPatientModel.aggregate([
+      {
+        $lookup: {
+          from: "patients",
+          localField: "patientId",
+          foreignField: "ipdPatientId",
+          as: "ipdPatients",
+        },
+      },
+    ]);
+    if (!ipdPatientData) {
+      return res.status(403).json({ message: "No Data Found" });
+    }
+    return res.status(200).json(ipdPatientData);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Internal Server Error");
+  }
+});
 Router.get("/ipd-patients/:DoctorId", async (req, res) => {
   const DoctorId = req.params.DoctorId;
   console.log(DoctorId);

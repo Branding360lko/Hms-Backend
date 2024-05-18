@@ -5,10 +5,9 @@ const Schema = mongoose.Schema;
 const PharmacySchema = new Schema(
   {
     pharmacistId: {
-      // type: Schema.Types.ObjectId,
-      // ref: "pharmacists",
-      // required: true,
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "pharmacyemployees",
+      required: true,
     },
     patientId: {
       type: Schema.Types.ObjectId,

@@ -82,7 +82,6 @@ Router.post("/add-pharamcy-employee", async (req, res) => {
 Router.put("/update-pharamcy-employee/:Id", async (req, res) => {
   const Id = req.params.Id;
   const {
-    Name,
     gender,
     dateOfBirth,
     email,
@@ -97,7 +96,6 @@ Router.put("/update-pharamcy-employee/:Id", async (req, res) => {
     const employee = await PharmacyEmployee.findByIdAndUpdate(
       { _id: Id },
       {
-        Name: Name ? Name : PharmacyEmployee.Name,
         dateOfBirth: dateOfBirth ? dateOfBirth : PharmacyEmployee.dateOfBirth,
         gender: gender ? gender : PharmacyEmployee.gender,
         email: email ? email : PharmacyEmployee.email,

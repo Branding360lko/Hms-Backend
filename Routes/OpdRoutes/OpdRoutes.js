@@ -107,6 +107,17 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
       },
 
       {
+        $unwind: "$OpdPatientData",
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "OpdPatientData.opdPatientId",
+          foreignField: "patientId",
+          as: "patientsData",
+        },
+      },
+      {
         $project: {
           _id: 1,
           Symptoms: 1,
@@ -118,6 +129,7 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
           "testData.Name": 1,
           "testData._id": 1,
           OpdPatientData: 1,
+          patientsData: 1,
         },
       },
     ]);

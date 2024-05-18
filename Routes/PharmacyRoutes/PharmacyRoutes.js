@@ -74,23 +74,26 @@ Router.post("/create-pharamacy", async (req, res) => {
   }
 });
 Router.put("/update-pharamacy/:Id", async (req, res) => {
-  const Id = res.params.Id;
+  const Id = req.params.Id;
   const { medicineId, dosge, frequency, instruction } = req.body;
   try {
-    const pharamcyData = await Pharamcy.findById({ _id: Id });
+    const pharamcyData = await Pharmacy.findByIdAndUpdate(
+      Id,
+      {
+        medicineId: medicineId ? medicineId : Pharmacy.medicineId,
+        dosge: dosge ? dosge : Pharmacy?.dosge,
+        frequency: frequency ? frequency : Pharmacy?.frequency,
+        instruction: instruction ? instruction : Pharmacy.instruction,
+      },
+      { new: true }
+    );
     if (!pharamcyData) {
       return res.status(403).json({ message: "No Pharamacy Data Found" });
     }
-    await pharamcyData({
-      medicineId: medicineId ? medicineId : pharamcyData.medicineId,
-      dosge: dosge ? dosge : pharamcyData?.dosge,
-      frequency: frequency ? frequency : pharamcyData?.frequency,
-      instruction: instruction ? instruction : pharamcyData.instruction,
-    });
-    await pharamcyData.save();
-    res.status(200).json({ message: "Updated SuccessFully" });
+
+    return res.status(200).json({ message: "Updated SuccessFully" });
   } catch (error) {
-    res.status(500).json("internal server error");
+    res.status(500).json({ message: "internal server error", error });
   }
 });
 
