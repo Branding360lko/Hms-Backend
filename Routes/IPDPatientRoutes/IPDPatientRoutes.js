@@ -35,9 +35,9 @@ Router.get("/IPDPatient-GET-ALL-with-patients-details", async (req, res) => {
       {
         $lookup: {
           from: "patients",
-          localField: "patientId",
-          foreignField: "ipdPatientId",
-          as: "ipdPatients",
+          localField: "ipdPatientId",
+          foreignField: "patientId",
+          as: "patientsDetails",
         },
       },
     ]);
