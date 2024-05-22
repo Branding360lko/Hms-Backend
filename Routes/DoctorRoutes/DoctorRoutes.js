@@ -109,6 +109,53 @@ router.get("/Doctor-GET-ONE/:doctorId", async (req, res) => {
       DoctorProfessionalDetails: doctorProfDetails,
     });
   } catch (error) {
+    console.log(error);
+    res.status(500).json("Internal Server Error");
+  }
+});
+router.get("/get-each-doctor-with-patients", async (req, res) => {
+  try {
+    const doctorsPatientsList = await DoctorModel.aggregate([
+      {
+        $lookup: {
+          from: "ipdpatients",
+          localField: "ipdDoctorId",
+          foreignField: "doctorId",
+          as: "doctorAsignWithPatients",
+        },
+      },
+      {
+        $unwind: {
+          path: "$doctorAsignWithPatients",
+        },
+      },
+      {
+        $project: {
+          _id: "$_id",
+          doctorId: "$doctorId",
+          doctorName: "$doctorName",
+          doctorBloodGroup: "$doctorBloodGroup",
+          doctorSpecialization: "$doctorSpecialization",
+          doctorQualification: "$doctorQualification",
+          doctorPhone: "$doctorPhone",
+          doctorEmail: "$doctorEmail",
+          Ipdpatient_id: "$doctorAsignWithPatients._id",
+          IpdpatientId: "$doctorAsignWithPatients.ipdDoctorId",
+          IpdPatientNotes: "$doctorAsignWithPatients.ipdPatientNotes",
+          IpdPatientCreatedTime: "$doctorAsignWithPatients.updatedAt",
+        },
+      },
+    ]);
+    if (!doctorsPatientsList) {
+      return res.status(403).json({
+        message: "SomeThing Went Wrong While Fetching Data",
+      });
+    }
+    return res
+      .status(200)
+      .json({ message: "Data Fetch Successfully", data: doctorsPatientsList });
+  } catch (error) {
+    console.log(error);
     res.status(500).json("Internal Server Error");
   }
 });

@@ -69,25 +69,44 @@ const IPDPatientSchema = new Schema(
       required: true,
     },
     ipdDepositAmount: {
-      type: String,
+      type: Number,
+      required: true,
+    },
+    ipdAddedAmount: {
+      type: Number,
+    },
+    ipdPatientRemainingAmount: {
+      type: Number,
     },
     ipdPaymentMode: {
       type: String,
     },
-    ipdWardNo: {
-      type: String,
-    },
+    // ipdWardNo: {
+    //   type: String,
+    // },
     ipdFloorNo: {
       type: String,
     },
-    ipdRoomNo: {
-      type: String,
-    },
+    // ipdRoomNo: {
+    //   type: String,
+    // },
     ipdBedNo: {
       type: String,
     },
     ipdPatientNotes: {
       type: String,
+    },
+    ipdPatientNurseRequestForDischarge: {
+      type: Boolean,
+      default: false,
+    },
+    ipdPatientDoctorRequestForDischarge: {
+      type: Boolean,
+      default: false,
+    },
+    ipdPatientDischarged: {
+      type: Boolean,
+      default: false,
     },
     isDeleted: {
       type: Boolean,
