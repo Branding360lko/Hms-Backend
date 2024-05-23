@@ -93,6 +93,10 @@ app.use("/api/", require("./Routes/PharmacyRoutes/PharmacyRoutes"));
 app.use("/api/", require("./Routes/PatientsReferRoutes/PatientsReferRoutes"));
 app.use(
   "/api/",
+  require("./Routes/IPDPatientRoutes/IPDPatientDischargeRoutes")
+);
+app.use(
+  "/api/",
   require("./Routes/PharmacyEmployeeRoutes/PharmacyEmployeeRoutes")
 );
 

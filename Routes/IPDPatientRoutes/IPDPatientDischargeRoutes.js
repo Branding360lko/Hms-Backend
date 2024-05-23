@@ -235,11 +235,26 @@ Router.put(
       anaesthesia,
       implantDetails,
     } = req.body;
+    console.log(
+      nurseId,
+      admittedFor,
+      investigationORProcedure,
+      conditionDuringDischarge,
+      date,
+      operations,
+      indications,
+      surgeon,
+      assistants,
+      nurse,
+      anaesthetist,
+      anaesthesia,
+      implantDetails
+    );
     try {
       const updatedNurseDischargeDetails =
         await IPDNurseDischargeDetailsModel.findOneAndUpdate(
           {
-            mainId: id,
+            ipdPatientRegId: id,
           },
           {
             nurseId: nurseId ? nurseId : IPDNurseDischargeDetailsModel.nurseId,
@@ -291,6 +306,7 @@ Router.put(
         if (updateIPDPatient) {
           return res.status(200).json({
             message: "IPD Patient Nurse Discharge Details has been updated",
+            updatedNurseDischargeDetails,
           });
         }
       }
@@ -319,7 +335,7 @@ Router.put(
     try {
       const updatedIPDDoctorDischargeDetails =
         await IPDDoctorDischargeDetailsModel.findOneAndUpdate(
-          { mainId: id },
+          { ipdPatientRegId: id },
           {
             doctorId: doctorId
               ? doctorId
