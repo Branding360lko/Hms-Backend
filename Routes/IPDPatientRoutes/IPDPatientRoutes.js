@@ -13,6 +13,8 @@ const IPDPatientBalanceModel = require("../../Models/IPDPatientSchema/IPDPatient
 
 const IPDDoctorDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPDDoctorDischargeDetailsSchema");
 
+const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
+
 const IPDNurseDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPDNurseDischargeDetailsSchema");
 
 const generateUniqueId = () => {
@@ -60,6 +62,8 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
     const IPDPatientBalance = await IPDPatientBalanceModel.findOne({
       ipdPatientRegId: id,
     });
+
+    const IPDPatient = await IPDPatientModel.findOne({ mainId: id });
 
     if (!IPDPatientBalance) {
       return res.status(404).json("IPD Patient Balance Data Not Found");
@@ -141,12 +145,83 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           console.log(err);
         });
 
-      return res.status(200).json({
-        data: IPDPatientBalance,
-        totalMedicalCharges: totalMedicalCharges,
-        totalLabTestCharges: totalLabTestCharges,
-        total: totalMedicalCharges + totalLabTestCharges,
+      const totalTime = (time) => {
+        let pastDate = new Date(time);
+        let presentDate = new Date();
+
+        let differenceInTime = presentDate.getTime() - pastDate.getTime();
+
+        let differenceInDays = Math.round(
+          differenceInTime / (1000 * 3600 * 24)
+        );
+
+        return differenceInDays + 1;
+      };
+
+      const totalCharges = (creationTime, charges) => {
+        let time = totalTime(creationTime);
+
+        let totalCharge = time * charges;
+
+        return totalCharge;
+      };
+
+      const ManageBedsPriceData = await ManageBedsModel.findOne({
+        bedId: IPDPatient.ipdBedNo,
       });
+
+      if (!ManageBedsPriceData) {
+        return res.status(404).json("IPD Patient Bed Not Found!");
+      }
+
+      if (ManageBedsPriceData) {
+        const ipdPatientAutoCharges = {
+          numberOfDays: totalTime(IPDPatient.createdAt),
+          totalbedCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.bedCharges
+          ),
+          totalNurseCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.nursingCharges
+          ),
+          totalEMOCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.EMOCharges
+          ),
+          totalBioWasteCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.bioWasteCharges
+          ),
+          totalSanitizationCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.sanitizationCharges
+          ),
+          subTotal:
+            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.bedCharges) +
+            totalCharges(
+              IPDPatient.createdAt,
+              ManageBedsPriceData.nursingCharges
+            ) +
+            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.EMOCharges) +
+            totalCharges(
+              IPDPatient.createdAt,
+              ManageBedsPriceData.bioWasteCharges
+            ) +
+            totalCharges(
+              IPDPatient.createdAt,
+              ManageBedsPriceData.sanitizationCharges
+            ),
+        };
+
+        return res.status(200).json({
+          data: IPDPatientBalance,
+          totalMedicalCharges: totalMedicalCharges,
+          totalLabTestCharges: totalLabTestCharges,
+          total: totalMedicalCharges + totalLabTestCharges,
+          autoCharges: ipdPatientAutoCharges,
+        });
+      }
     }
   } catch (error) {
     res.status(500).json("Internal Server Error");
