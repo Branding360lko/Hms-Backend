@@ -218,8 +218,17 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           data: IPDPatientBalance,
           totalMedicalCharges: totalMedicalCharges,
           totalLabTestCharges: totalLabTestCharges,
-          total: totalMedicalCharges + totalLabTestCharges,
           autoCharges: ipdPatientAutoCharges,
+          total:
+            totalMedicalCharges +
+            totalLabTestCharges +
+            ipdPatientAutoCharges?.subTotal,
+          remainingBalance:
+            IPDPatientBalance?.balance[IPDPatientBalance?.balance?.length - 1]
+              .totalBalance -
+            (totalMedicalCharges +
+              totalLabTestCharges +
+              ipdPatientAutoCharges?.subTotal),
         });
       }
     }
