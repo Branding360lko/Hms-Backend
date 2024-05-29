@@ -4,14 +4,36 @@ const IPDSchema = new Schema(
   {
     medicine: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "Medicine",
+        Name: {
+          type: String,
+          require: true,
+        },
+        Quantity: {
+          type: Number,
+          require: true,
+          default: 1,
+        },
+        Price: {
+          type: Number,
+          require: true,
+        },
       },
     ],
     test: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "test",
+        Name: {
+          type: String,
+          require: true,
+        },
+        Quantity: {
+          type: Number,
+          require: true,
+          default: 1,
+        },
+        Price: {
+          type: Number,
+          require: true,
+        },
       },
     ],
     Symptoms: {
@@ -28,8 +50,9 @@ const IPDSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "doctors",
     },
-    VisitId: {
+    VisitDateTime: {
       type: String,
+      require: true,
     },
     isPatientsChecked: {
       type: Boolean,

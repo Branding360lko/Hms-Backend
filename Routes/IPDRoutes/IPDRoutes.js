@@ -40,17 +40,47 @@ Router.get("/All-Ipd-Routes", async (req, res) => {
 });
 
 Router.post("/IPD-Create", upload.none(), async (req, res) => {
-  const { medicine, test, Symptoms, Note, ipdPatientData, isPatientsChecked } =
-    req.body;
-
+  const {
+    medicine,
+    test,
+    Symptoms,
+    Note,
+    ipdPatientData,
+    isPatientsChecked,
+    doctorId,
+    VisitDateTime,
+  } = req.body;
+  console.log(
+    medicine,
+    test,
+    Symptoms,
+    Note,
+    ipdPatientData,
+    isPatientsChecked,
+    doctorId,
+    VisitDateTime
+  );
   try {
+    const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
+    const test = req.body.test ? JSON.parse(req.body.test) : [];
+
     const ipd = await IPD.create({
       Note,
       Symptoms,
-      medicine,
-      test,
+      medicine: medicine.map((med) => ({
+        Name: med.name,
+        Quantity: med.quantity,
+        Price: med.price,
+      })),
+      test: test.map((tst) => ({
+        Name: tst.name,
+        Quantity: tst.quantity,
+        Price: tst.price,
+      })),
       ipdPatientData,
       isPatientsChecked,
+      doctorId,
+      VisitDateTime,
     });
     const ipdData = await IPD.findById(ipd?._id);
 
@@ -71,24 +101,26 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
   try {
     const IpdData = await IPD.aggregate([
       {
-        $match: { _id: mongoose.Types.ObjectId.createFromHexString(Id) },
-      },
-      {
-        $lookup: {
-          from: "medicines",
-          localField: "medicine",
-          foreignField: "_id",
-          as: "medicineData",
+        $match: {
+          ipdPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
         },
       },
-      {
-        $lookup: {
-          from: "tests",
-          localField: "test",
-          foreignField: "_id",
-          as: "testData",
-        },
-      },
+      // {
+      //   $lookup: {
+      //     from: "medicines",
+      //     localField: "medicine",
+      //     foreignField: "_id",
+      //     as: "medicineData",
+      //   },
+      // },
+      // {
+      //   $lookup: {
+      //     from: "tests",
+      //     localField: "test",
+      //     foreignField: "_id",
+      //     as: "testData",
+      //   },
+      // },
       {
         $lookup: {
           from: "ipdpatients",
@@ -98,11 +130,23 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
         },
       },
       {
+        $unwind: "$IpdPatientData",
+      },
+
+      {
         $lookup: {
           from: "patients",
-          localField: "ipdPatientData",
-          foreignField: "_id",
+          localField: "IpdPatientData.ipdPatientId",
+          foreignField: "patientId",
           as: "patientsData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "doctorId",
+          foreignField: "_id",
+          as: "doctorData",
         },
       },
       {
@@ -110,13 +154,13 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
           _id: 1,
           Symptoms: 1,
           Note: 1,
-          "medicineData.Name": 1,
-          "medicineData.Price": 1,
-          "medicineData._id": 1,
-          "testData.Name": 1,
-          "testData._id": 1,
+          VisitDateTime: 1,
+          isPatientsChecked: 1,
+          medicine: 1,
+          test: 1,
           IpdPatientData: 1,
           patientsData: 1,
+          doctorData: 1,
         },
       },
     ]);
@@ -129,6 +173,7 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
 
     return res.status(200).json(IpdData);
   } catch (error) {
+    console.log(error);
     res.status(500).json("Internal Server Error");
   }
 });
