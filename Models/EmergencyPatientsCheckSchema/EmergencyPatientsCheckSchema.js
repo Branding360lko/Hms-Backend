@@ -5,14 +5,36 @@ const EmergencyPatientsCheckSchema = new Schema(
   {
     medicine: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "Medicine",
+        Name: {
+          type: String,
+          require: true,
+        },
+        Quantity: {
+          type: Number,
+          require: true,
+          default: 1,
+        },
+        Price: {
+          type: Number,
+          require: true,
+        },
       },
     ],
     test: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "test",
+        Name: {
+          type: String,
+          require: true,
+        },
+        Quantity: {
+          type: Number,
+          require: true,
+          default: 1,
+        },
+        Price: {
+          type: Number,
+          require: true,
+        },
       },
     ],
     Symptoms: {
@@ -29,6 +51,14 @@ const EmergencyPatientsCheckSchema = new Schema(
       type: Boolean,
       require: true,
       default: false,
+    },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: "doctors",
+    },
+    VisitDateTime: {
+      type: String,
+      require: true,
     },
   },
   { timestamps: true }

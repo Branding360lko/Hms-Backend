@@ -35,70 +35,111 @@ Router.get("/All-EmergencyPatientsChecks-Routes", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-Router.post("/add-EmergencyPatientsChecks-Routes", async (req, res) => {
-  const {
-    medicine,
-    test,
-    Symptoms,
-    Note,
-    EmergencyPatientData,
-    isPatientsChecked,
-  } = req.body;
-
-  try {
-    const emergency = await EmergencyPatientsCheck.create({
-      Note,
+Router.post(
+  "/add-EmergencyPatientsChecks-Routes",
+  upload.none(),
+  async (req, res) => {
+    const {
       Symptoms,
-      medicine,
-      test,
+      Note,
       EmergencyPatientData,
       isPatientsChecked,
-    });
-    const emergencyData = await EmergencyPatientsCheck.findById(emergency?._id);
+      doctorId,
+      VisitDateTime,
+    } = req.body;
 
-    if (!emergencyData) {
-      res
-        .status(500)
-        .json("Something went wrong while Saving the Emergency Data");
+    try {
+      const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
+      const test = req.body.test ? JSON.parse(req.body.test) : [];
+
+      const emergency = await EmergencyPatientsCheck.create({
+        Note,
+        Symptoms,
+        medicine: medicine.map((med) => ({
+          Name: med.name,
+          Quantity: med.quantity,
+          Price: med.price,
+        })),
+        test: test.map((tst) => ({
+          Name: tst.name,
+          Quantity: tst.quantity,
+          Price: tst.price,
+        })),
+        EmergencyPatientData,
+        isPatientsChecked,
+        doctorId,
+        VisitDateTime,
+      });
+      const emergencyData = await EmergencyPatientsCheck.findById(
+        emergency?._id
+      );
+
+      if (!emergencyData) {
+        res
+          .status(500)
+          .json("Something went wrong while Saving the Emergency Data");
+      }
+
+      return res
+        .status(201)
+        .json({ message: "Data Created Successfully", data: emergencyData });
+    } catch (error) {
+      res.status(500).json({ message: "internal Server Error" });
     }
-
-    return res
-      .status(201)
-      .json({ message: "Data Created Successfully", data: emergencyData });
-  } catch (error) {
-    res.status(500).json({ message: "internal Server Error" });
   }
-});
+);
 Router.get("/get-one-EmergencyPatientsChecks/:Id", async (req, res) => {
   const Id = req.params.Id;
 
   try {
     const EmergencyData = await EmergencyPatientsCheck.aggregate([
       {
-        $match: { _id: mongoose.Types.ObjectId.createFromHexString(Id) },
-      },
-      {
-        $lookup: {
-          from: "medicines",
-          localField: "medicine",
-          foreignField: "_id",
-          as: "medicineData",
+        $match: {
+          EmergencyPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
         },
       },
+      // {
+      //   $lookup: {
+      //     from: "medicines",
+      //     localField: "medicine",
+      //     foreignField: "_id",
+      //     as: "medicineData",
+      //   },
+      // },
+      // {
+      //   $lookup: {
+      //     from: "tests",
+      //     localField: "test",
+      //     foreignField: "_id",
+      //     as: "testData",
+      //   },
+      // },
       {
         $lookup: {
-          from: "tests",
-          localField: "test",
-          foreignField: "_id",
-          as: "testData",
-        },
-      },
-      {
-        $lookup: {
-          from: "ipdpatients",
-          localField: "IpdPatientData",
+          from: "emergencypatients",
+          localField: "EmergencyPatientData",
           foreignField: "_id",
           as: "EmergencyPatientData",
+        },
+      },
+      {
+        $unwind: "$EmergencyPatientData",
+      },
+
+      {
+        $lookup: {
+          from: "patients",
+          localField: "EmergencyPatientData.patientId",
+          foreignField: "patientId",
+          as: "patientsData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "doctorId",
+          foreignField: "_id",
+          as: "doctorData",
         },
       },
       {
@@ -106,10 +147,12 @@ Router.get("/get-one-EmergencyPatientsChecks/:Id", async (req, res) => {
           _id: 1,
           Symptoms: 1,
           Note: 1,
-          "medicineData.Name": 1,
-          "medicineData.Price": 1,
-          "testData.TestName": 1,
+          medicine: 1,
+          test: 1,
+          VisitDateTime: 1,
           EmergencyPatientData: 1,
+          patientsData: 1,
+          doctorData: 1,
         },
       },
     ]);

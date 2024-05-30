@@ -99,7 +99,10 @@ app.use(
   "/api/",
   require("./Routes/PharmacyEmployeeRoutes/PharmacyEmployeeRoutes")
 );
-
+app.use(
+  "/api/",
+  require("./Routes/EmergencyPatientRoutes/EmergencyPatientRoutes")
+);
 app.get("/home", (req, res) => {
   res.send("this is hms main page");
 });

@@ -159,6 +159,54 @@ router.get("/get-each-doctor-with-patients", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+router.get("/get-each-doctor-with-patients-emergency", async (req, res) => {
+  try {
+    const doctorsPatientsList = await DoctorModel.aggregate([
+      {
+        $lookup: {
+          from: "emergencypatients",
+          localField: "doctorId",
+          foreignField: "doctorId",
+          as: "doctorAsignWithEmergencyPatients",
+        },
+      },
+      {
+        $unwind: {
+          path: "$doctorAsignWithEmergencyPatients",
+        },
+      },
+      {
+        $project: {
+          _id: "$_id",
+          doctorId: "$doctorId",
+          doctorName: "$doctorName",
+          doctorBloodGroup: "$doctorBloodGroup",
+          doctorSpecialization: "$doctorSpecialization",
+          doctorQualification: "$doctorQualification",
+          doctorPhone: "$doctorPhone",
+          doctorEmail: "$doctorEmail",
+          Emergencypatient_id: "$doctorAsignWithEmergencyPatients._id",
+          patientsId: "$doctorAsignWithEmergencyPatients.patientId",
+
+          EmergencyNotes: "$doctorAsignWithEmergencyPatients.notes",
+          EmergencyPatientCreatedTime:
+            "$doctorAsignWithEmergencyPatients.updatedAt",
+        },
+      },
+    ]);
+    if (!doctorsPatientsList) {
+      return res.status(403).json({
+        message: "SomeThing Went Wrong While Fetching Data",
+      });
+    }
+    return res
+      .status(200)
+      .json({ message: "Data Fetch Successfully", data: doctorsPatientsList });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Internal Server Error");
+  }
+});
 
 router.post("/Doctor-POST", upload.single("doctorImage"), async (req, res) => {
   const {
