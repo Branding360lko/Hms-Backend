@@ -92,6 +92,7 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       .status(201)
       .json({ message: "Data Created Successfully", data: ipdData });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "internal Server Error" });
   }
 });
