@@ -49,6 +49,7 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
     isPatientsChecked,
     doctorId,
     VisitDateTime,
+    ReferedDoctorId,
   } = req.body;
   console.log(
     medicine,
@@ -81,6 +82,7 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       isPatientsChecked,
       doctorId,
       VisitDateTime,
+      ReferedDoctorId,
     });
     const ipdData = await IPD.findById(ipd?._id);
 
@@ -151,6 +153,14 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "doctors",
+          localField: "ReferedDoctorId",
+          foreignField: "_id",
+          as: "ReferedDoctor",
+        },
+      },
+      {
         $project: {
           _id: 1,
           Symptoms: 1,
@@ -162,6 +172,7 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
           IpdPatientData: 1,
           patientsData: 1,
           doctorData: 1,
+          ReferedDoctor: 1,
         },
       },
     ]);
@@ -176,6 +187,47 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json("Internal Server Error");
+  }
+});
+Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
+  const Id = req.params.Id;
+  try {
+    const medicineData = [];
+    const IpdData = await IPD.aggregate([
+      {
+        $match: {
+          ipdPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
+        },
+      },
+      { $unwind: "$medicine" },
+      { $unwind: "$test" },
+
+      {
+        $group: {
+          _id: "$_id",
+          DailyMedicinePriceTotal: { $sum: "$medicine.Price" },
+          DailyTestPriceTotal: { $sum: "$test.Price" },
+          visitDate: { $first: "$VisitDateTime" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          overAllData: { $push: "$$ROOT" },
+          overallTotalMedicinePrice: { $sum: "$DailyMedicinePriceTotal" },
+          overallTotalTestPrice: { $sum: "$DailyTestPriceTotal" },
+        },
+      },
+    ]);
+
+    if (!IpdData) {
+      return res.status(403).json({ message: "No Data Found" });
+    }
+
+    res.status(200).json(IpdData);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("internal server error");
   }
 });
 Router.put("/update-one-Ipd/:Id", upload.none(), async (req, res) => {

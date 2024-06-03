@@ -104,6 +104,14 @@ const IPDPatientSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    ipdPatientNurseConfirmation: {
+      type: Boolean,
+      default: false,
+    },
+    ipdPatientDoctorConfirmation: {
+      type: Boolean,
+      default: false,
+    },
     ipdPatientDischarged: {
       type: Boolean,
       default: false,

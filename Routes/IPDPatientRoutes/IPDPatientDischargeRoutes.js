@@ -67,8 +67,8 @@ Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
 
     if (ipdPatientCheck) {
       if (
-        ipdPatientCheck.ipdPatientNurseRequestForDischarge === true &&
-        ipdPatientCheck.ipdPatientDoctorRequestForDischarge === true
+        ipdPatientCheck.ipdPatientNurseConfirmation === true &&
+        ipdPatientCheck.ipdPatientDoctorConfirmation === true
       ) {
         const ipdPatientUpdatedData = await IPDPatientModel.findOneAndUpdate(
           { mainId: id },
@@ -215,6 +215,28 @@ Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
   }
 });
 
+Router.put("/IPDPatientDischargeRequest-PUT/:id", async (req, res) => {
+  try {
+    const updatedValue = await IPDPatientModel.findOneAndUpdate(
+      {
+        mainId: req.params.id,
+      },
+      {
+        ipdPatientNurseRequestForDischarge: true,
+        ipdPatientDoctorRequestForDischarge: true,
+      }
+    );
+    if (!updatedValue) {
+      return res.status(404).json({ error: "IPD Patient data Not found" });
+    }
+    return res
+      .status(200)
+      .json({ message: "Resquest to discharge send successfully" });
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
+
 Router.put(
   "/IPDPatientDischarge-NurseDischargeDetails-PUT/:IpdPatientRegID",
   async (req, res) => {
@@ -235,26 +257,11 @@ Router.put(
       anaesthesia,
       implantDetails,
     } = req.body;
-    console.log(
-      nurseId,
-      admittedFor,
-      investigationORProcedure,
-      conditionDuringDischarge,
-      date,
-      operations,
-      indications,
-      surgeon,
-      assistants,
-      nurse,
-      anaesthetist,
-      anaesthesia,
-      implantDetails
-    );
     try {
       const updatedNurseDischargeDetails =
         await IPDNurseDischargeDetailsModel.findOneAndUpdate(
           {
-            ipdPatientRegId: id,
+            IpdPatientRegID: id,
           },
           {
             nurseId: nurseId ? nurseId : IPDNurseDischargeDetailsModel.nurseId,
@@ -299,14 +306,14 @@ Router.put(
             mainId: updatedNurseDischargeDetails.ipdPatientRegId,
           },
           {
-            ipdPatientNurseRequestForDischarge: true,
+            // ipdPatientNurseRequestForDischarge: true,
+            ipdPatientNurseConfirmation: true,
           }
         );
 
         if (updateIPDPatient) {
           return res.status(200).json({
             message: "IPD Patient Nurse Discharge Details has been updated",
-            updatedNurseDischargeDetails,
           });
         }
       }
@@ -335,7 +342,7 @@ Router.put(
     try {
       const updatedIPDDoctorDischargeDetails =
         await IPDDoctorDischargeDetailsModel.findOneAndUpdate(
-          { ipdPatientRegId: id },
+          { IpdPatientRegID: id },
           {
             doctorId: doctorId
               ? doctorId
@@ -371,7 +378,8 @@ Router.put(
             mainId: updatedIPDDoctorDischargeDetails.ipdPatientRegId,
           },
           {
-            ipdPatientDoctorRequestForDischarge: true,
+            // ipdPatientDoctorRequestForDischarge: true,
+            ipdPatientDoctorConfirmation: true,
           }
         );
 

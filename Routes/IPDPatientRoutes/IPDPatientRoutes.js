@@ -13,6 +13,8 @@ const IPDPatientBalanceModel = require("../../Models/IPDPatientSchema/IPDPatient
 
 const IPDDoctorDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPDDoctorDischargeDetailsSchema");
 
+const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
+
 const IPDNurseDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPDNurseDischargeDetailsSchema");
 
 const generateUniqueId = () => {
@@ -38,34 +40,7 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-Router.get("/IpdPatient-whole-data/:Id", async (req, res) => {
-  const Id = req.params.Id;
-  try {
-    const patientsData = await IPDPatientModel.aggregate([
-      {
-        $match: {
-          ipdPatientId: Id,
-        },
-      },
-      {
-        $lookup: {
-          from: "patients",
-          localField: "ipdPatientId",
-          foreignField: "patientId",
-          as: "patientData",
-        },
-      },
-    ]);
-    if (!patientsData) {
-      return res.status(403).json({ message: "No Data Find with This Id" });
-    }
-    return res
-      .status(200)
-      .json({ message: "Data Fetch Successfully ", data: patientsData });
-  } catch (error) {
-    res.status(500).json("internal server error");
-  }
-});
+
 Router.get("/IPDPatient-GET-ONE/:Id", async (req, res) => {
   const id = req.params.Id;
 
@@ -87,6 +62,8 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
     const IPDPatientBalance = await IPDPatientBalanceModel.findOne({
       ipdPatientRegId: id,
     });
+
+    const IPDPatient = await IPDPatientModel.findOne({ mainId: id });
 
     if (!IPDPatientBalance) {
       return res.status(404).json("IPD Patient Balance Data Not Found");
@@ -113,7 +90,11 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
         {
           $group: {
             _id: "$_id",
-            totalItemsPrice: { $sum: "$totalItems.price" },
+            totalItemsPrice: {
+              $sum: {
+                $multiply: ["$totalItems.price", "$totalItems.quantity"],
+              },
+            },
           },
         },
       ])
@@ -145,7 +126,11 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
         {
           $group: {
             _id: "$_id",
-            totalItemsPrice: { $sum: "$totalItems.price" },
+            totalItemsPrice: {
+              $sum: {
+                $multiply: ["$totalItems.price", "$totalItems.quantity"],
+              },
+            },
           },
         },
       ])
@@ -160,12 +145,92 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           console.log(err);
         });
 
-      return res.status(200).json({
-        data: IPDPatientBalance,
-        totalMedicalCharges: totalMedicalCharges,
-        totalLabTestCharges: totalLabTestCharges,
-        total: totalMedicalCharges + totalLabTestCharges,
+      const totalTime = (time) => {
+        let pastDate = new Date(time);
+        let presentDate = new Date();
+
+        let differenceInTime = presentDate.getTime() - pastDate.getTime();
+
+        let differenceInDays = Math.round(
+          differenceInTime / (1000 * 3600 * 24)
+        );
+
+        return differenceInDays + 1;
+      };
+
+      const totalCharges = (creationTime, charges) => {
+        let time = totalTime(creationTime);
+
+        let totalCharge = time * charges;
+
+        return totalCharge;
+      };
+
+      const ManageBedsPriceData = await ManageBedsModel.findOne({
+        bedId: IPDPatient.ipdBedNo,
       });
+
+      if (!ManageBedsPriceData) {
+        return res.status(404).json("IPD Patient Bed Not Found!");
+      }
+
+      if (ManageBedsPriceData) {
+        const ipdPatientAutoCharges = {
+          numberOfDays: totalTime(IPDPatient.createdAt),
+          totalbedCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.bedCharges
+          ),
+          totalNurseCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.nursingCharges
+          ),
+          totalEMOCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.EMOCharges
+          ),
+          totalBioWasteCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.bioWasteCharges
+          ),
+          totalSanitizationCharges: totalCharges(
+            IPDPatient.createdAt,
+            ManageBedsPriceData.sanitizationCharges
+          ),
+          subTotal:
+            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.bedCharges) +
+            totalCharges(
+              IPDPatient.createdAt,
+              ManageBedsPriceData.nursingCharges
+            ) +
+            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.EMOCharges) +
+            totalCharges(
+              IPDPatient.createdAt,
+              ManageBedsPriceData.bioWasteCharges
+            ) +
+            totalCharges(
+              IPDPatient.createdAt,
+              ManageBedsPriceData.sanitizationCharges
+            ),
+        };
+
+        return res.status(200).json({
+          data: IPDPatientBalance,
+          totalMedicalCharges: totalMedicalCharges,
+          totalLabTestCharges: totalLabTestCharges,
+          autoCharges: ipdPatientAutoCharges,
+          total:
+            totalMedicalCharges +
+            totalLabTestCharges +
+            ipdPatientAutoCharges?.subTotal,
+          remainingBalance:
+            IPDPatientBalance?.balance[IPDPatientBalance?.balance?.length - 1]
+              .totalBalance -
+            (totalMedicalCharges +
+              totalLabTestCharges +
+              ipdPatientAutoCharges?.subTotal),
+        });
+      }
     }
   } catch (error) {
     res.status(500).json("Internal Server Error");
@@ -178,6 +243,7 @@ Router.post("/IPDPatient-POST", async (req, res) => {
     ipdDoctorId,
     ipdPatientNotes,
     ipdDepositAmount,
+
     ipdPaymentMode,
     // ipdWardNo,
     ipdFloorNo,
@@ -377,7 +443,11 @@ Router.put("/IPDPatient-PUT-AddItemCharges/:Id", async (req, res) => {
       {
         $group: {
           _id: "$_id",
-          totalItemsPrice: { $sum: "$totalItems.price" },
+          totalItemsPrice: {
+            $sum: {
+              $multiply: ["$totalItems.price", "$totalItems.quantity"],
+            },
+          },
         },
       },
     ])
@@ -394,10 +464,13 @@ Router.put("/IPDPatient-PUT-AddItemCharges/:Id", async (req, res) => {
 
     if (items) {
       const newTotalValue = items?.reduce((acc, currentValue) => {
-        return currentValue.price + acc;
+        const itemPrice = currentValue.price * currentValue.quantity;
+        return itemPrice + acc;
       }, 0);
       newTotal = newTotalValue;
     }
+
+    // console.log(total, newTotal);
 
     if (IPDPatient) {
       const IPDPatientChargesData =
@@ -459,7 +532,11 @@ Router.put("/IPDPatient-PUT-AddLabTestCharges/:Id", async (req, res) => {
       {
         $group: {
           _id: "$_id",
-          totalItemsPrice: { $sum: "$totalItems.price" },
+          totalItemsPrice: {
+            $sum: {
+              $multiply: ["$totalItems.price", "$totalItems.quantity"],
+            },
+          },
         },
       },
     ])
@@ -476,7 +553,8 @@ Router.put("/IPDPatient-PUT-AddLabTestCharges/:Id", async (req, res) => {
 
     if (items) {
       const newTotalValue = items?.reduce((acc, currentValue) => {
-        return currentValue.price + acc;
+        const itemPrice = currentValue.price * currentValue.quantity;
+        return itemPrice + acc;
       }, 0);
       newTotal = newTotalValue;
     }
