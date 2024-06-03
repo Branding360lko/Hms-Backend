@@ -201,6 +201,8 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
       },
       { $unwind: "$medicine" },
       { $unwind: "$test" },
+      { $unwind: "$doctorId" },
+      { $unwind: "$ReferedDoctorId" },
 
       {
         $group: {
