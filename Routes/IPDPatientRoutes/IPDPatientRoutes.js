@@ -56,6 +56,106 @@ Router.get("/IPDPatient-GET-ONE/:Id", async (req, res) => {
   }
 });
 
+Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
+  try {
+    const allBalances = await IPDPatientBalanceModel.find();
+
+    // console.log(allBalances);
+
+    const remainingBalances = await IPDPatientBalanceModel.aggregate([
+      {
+        $unwind: "$balance",
+      },
+      {
+        $group: {
+          _id: "$_id",
+          balanceID: { $first: "$balanceID" },
+          uhid: { $first: "$uhid" },
+          ipdPatientRegId: { $first: "$ipdPatientRegId" },
+          // totalBalance: { $sum: "$balance.totalBalance" },
+          totalAddedBalance: { $sum: "$balance.addedBalance" },
+          charges: { $first: "$charges" },
+          labTestCharges: { $first: "$labTestCharges" },
+        },
+      },
+      {
+        $unwind: {
+          path: "$charges",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unwind: {
+          path: "$charges.items",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          balanceID: { $first: "$balanceID" },
+          uhid: { $first: "$uhid" },
+          ipdPatientRegId: { $first: "$ipdPatientRegId" },
+          labTestCharges: { $first: "$labTestCharges" },
+          // totalBalance: { $first: "$totalBalance" },
+          totalAddedBalance: { $first: "$totalAddedBalance" },
+          totalCharges: {
+            $sum: {
+              $multiply: ["$charges.items.quantity", "$charges.items.price"],
+            },
+          },
+        },
+      },
+      {
+        $unwind: {
+          path: "$labTestCharges",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $unwind: {
+          path: "$labTestCharges.items",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          balanceID: { $first: "$balanceID" },
+          uhid: { $first: "$uhid" },
+          ipdPatientRegId: { $first: "$ipdPatientRegId" },
+          // labTestCharges: { $first: "$labTestCharges" },
+          // totalBalance: { $first: "$totalBalance" },
+          totalAddedBalance: { $first: "$totalAddedBalance" },
+          totalCharges: { $first: "$totalCharges" },
+          totalLabTestCharges: {
+            $sum: {
+              $multiply: [
+                "$labTestCharges.items.quantity",
+                "$labTestCharges.items.price",
+              ],
+            },
+          },
+        },
+      },
+      // {
+      //   $addFields: {
+      //     remainingBalance: {
+      //       $subtract: [
+      //         { $add: ["$totalBalance", "$totalAddedBalance"] },
+      //         "$totalCharges",
+      //       ],
+      //     },
+      //   },
+      // },
+    ]);
+
+    console.log(remainingBalances);
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
+
 Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
   const id = req.params.Id;
   try {
@@ -241,12 +341,14 @@ Router.post("/IPDPatient-POST", async (req, res) => {
   const {
     ipdPatientId,
     ipdDoctorId,
+    ipdNurseId,
     ipdPatientNotes,
     ipdDepositAmount,
 
     ipdPaymentMode,
     // ipdWardNo,
     ipdFloorNo,
+
     // ipdRoomNo,
     ipdBedNo,
   } = req.body;
@@ -261,6 +363,7 @@ Router.post("/IPDPatient-POST", async (req, res) => {
       mainId: "P-IPD-" + generateUniqueId(),
       ipdPatientId: ipdPatientId,
       ipdDoctorId: ipdDoctorId,
+      ipdNurseId: ipdNurseId,
       ipdDepositAmount: ipdDepositAmount,
 
       // ipdWardNo: ipdWardNo,
@@ -321,6 +424,7 @@ Router.put("/IPDPatient-PUT/:Id", async (req, res) => {
   const {
     ipdPatientId,
     ipdDoctorId,
+    ipdNurseId,
     ipdPatientNotes,
     ipdDepositAmount,
     // ipdWardNo,
@@ -336,6 +440,7 @@ Router.put("/IPDPatient-PUT/:Id", async (req, res) => {
           ? ipdPatientId
           : IPDPatientModel.ipdPatientId,
         ipdDoctorId: ipdDoctorId ? ipdDoctorId : IPDPatientModel.ipdDoctorId,
+        ipdNurseId: ipdNurseId ? ipdNurseId : IPDPatientModel.ipdNurseId,
         ipdDepositAmount: ipdDepositAmount
           ? ipdDepositAmount
           : IPDPatientModel.ipdDepositAmount,

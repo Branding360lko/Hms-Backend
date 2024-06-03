@@ -57,7 +57,8 @@ Router.get("/Admin-GET-ONE/:adminId", async (req, res) => {
 });
 
 Router.post("/AdminRegister", async (req, res) => {
-  const { adminName, adminEmail, adminPassword, adminRole } = req.body;
+  const { adminName, adminEmail, adminUniqueId, adminPassword, adminRole } =
+    req.body;
   try {
     if (validateEmail(adminEmail)) {
       const emailExist = await AdminModel.findOne({ adminEmail: adminEmail });
@@ -73,6 +74,7 @@ Router.post("/AdminRegister", async (req, res) => {
             adminId: "ADM-" + generateUniqueId(),
             adminName: adminName,
             adminEmail: adminEmail,
+            adminUniqueId: adminUniqueId,
             adminPassword: hashedPassword,
             adminRole: adminRole,
           });

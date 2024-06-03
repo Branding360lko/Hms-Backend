@@ -12,6 +12,9 @@ const AdminSchema = new Schema(
       type: String,
       required: true,
     },
+    adminUniqueId: {
+      type: String,
+    },
     adminEmail: {
       type: String,
       required: true,

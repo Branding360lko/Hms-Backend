@@ -68,11 +68,18 @@ const IPDPatientSchema = new Schema(
       type: String,
       required: true,
     },
+    ipdNurseId: {
+      type: String,
+      required: true,
+    },
     ipdDepositAmount: {
       type: Number,
       required: true,
     },
     ipdAddedAmount: {
+      type: Number,
+    },
+    ipdPatientRemainingAmount: {
       type: Number,
     },
     ipdPatientRemainingAmount: {
