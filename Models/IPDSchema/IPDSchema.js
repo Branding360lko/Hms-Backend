@@ -53,6 +53,7 @@ const IPDSchema = new Schema(
     ReferedDoctorId: {
       type: Schema.Types.ObjectId,
       ref: "doctors",
+      default: null,
     },
     VisitDateTime: {
       type: String,

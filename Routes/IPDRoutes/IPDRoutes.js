@@ -192,24 +192,64 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
 Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
   const Id = req.params.Id;
   try {
-    const medicineData = [];
     const IpdData = await IPD.aggregate([
       {
         $match: {
           ipdPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
         },
       },
-      { $unwind: "$medicine" },
-      { $unwind: "$test" },
-      { $unwind: "$doctorId" },
-      { $unwind: "$ReferedDoctorId" },
 
+      { $unwind: { path: "$medicine", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$test", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "doctorId",
+          foreignField: "_id",
+          as: "doctorData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "ReferedDoctorId",
+          foreignField: "_id",
+          as: "ReferedDoctor",
+        },
+      },
+
+      { $unwind: { path: "$doctorData", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$ReferedDoctor", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "doctorData.doctorId",
+          foreignField: "doctorId",
+          as: "doctorFeesDatails",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "ReferedDoctor.doctorId",
+          foreignField: "doctorId",
+          as: "RefereddoctorFeesDatails",
+        },
+      },
       {
         $group: {
           _id: "$_id",
           DailyMedicinePriceTotal: { $sum: "$medicine.Price" },
           DailyTestPriceTotal: { $sum: "$test.Price" },
           visitDate: { $first: "$VisitDateTime" },
+          // doctorData: { $first: "$doctorData" },
+          // referedDoctorData: { $first: "$ReferedDoctor" },
+          doctorFeesDatails: { $first: "$doctorFeesDatails.doctorFee" },
+          RefereddoctorFeesDatails: {
+            $first: "$RefereddoctorFeesDatails.doctorFee",
+          },
+          // doctorVisitTotalCharge:{$sum:{$cond:if:{"ReferedDoctor":}}},
+          // $sum: { $cond: { if: { "status": "present" }, then: 1, else: 0}}
         },
       },
       {
@@ -218,6 +258,24 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           overAllData: { $push: "$$ROOT" },
           overallTotalMedicinePrice: { $sum: "$DailyMedicinePriceTotal" },
           overallTotalTestPrice: { $sum: "$DailyTestPriceTotal" },
+          overallDoctorVisitCharge: {
+            $sum: {
+              $cond: {
+                if: { $ne: ["$RefereddoctorFeesDatails", []] }, // Checks if RefereddoctorFeesDatails is not an empty array
+                then: { $arrayElemAt: ["$RefereddoctorFeesDatails", 0] }, // Use the fee from RefereddoctorFeesDatails if present
+                else: { $arrayElemAt: ["$doctorFeesDatails", 0] }, // Otherwise, use the fee from doctorFeesDatails
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          overAllData: 1,
+          overallTotalMedicinePrice: 1,
+          overallTotalTestPrice: 1,
+          overallDoctorVisitCharge: 1,
         },
       },
     ]);
