@@ -119,8 +119,8 @@ router.get("/get-each-doctor-with-patients", async (req, res) => {
       {
         $lookup: {
           from: "ipdpatients",
-          localField: "ipdDoctorId",
-          foreignField: "doctorId",
+          localField: "doctorId",
+          foreignField: "ipdDoctorId",
           as: "doctorAsignWithPatients",
         },
       },
@@ -140,7 +140,7 @@ router.get("/get-each-doctor-with-patients", async (req, res) => {
           doctorPhone: "$doctorPhone",
           doctorEmail: "$doctorEmail",
           Ipdpatient_id: "$doctorAsignWithPatients._id",
-          IpdpatientId: "$doctorAsignWithPatients.ipdDoctorId",
+          IpdpatientId: "$doctorAsignWithPatients.ipdPatientId",
           IpdPatientNotes: "$doctorAsignWithPatients.ipdPatientNotes",
           IpdPatientCreatedTime: "$doctorAsignWithPatients.updatedAt",
         },

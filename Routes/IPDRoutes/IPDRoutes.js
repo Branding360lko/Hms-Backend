@@ -261,9 +261,9 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           overallDoctorVisitCharge: {
             $sum: {
               $cond: {
-                if: { $ne: ["$RefereddoctorFeesDatails", []] }, // Checks if RefereddoctorFeesDatails is not an empty array
-                then: { $arrayElemAt: ["$RefereddoctorFeesDatails", 0] }, // Use the fee from RefereddoctorFeesDatails if present
-                else: { $arrayElemAt: ["$doctorFeesDatails", 0] }, // Otherwise, use the fee from doctorFeesDatails
+                if: { $ne: ["$RefereddoctorFeesDatails", []] },
+                then: { $arrayElemAt: ["$RefereddoctorFeesDatails", 0] },
+                else: { $arrayElemAt: ["$doctorFeesDatails", 0] },
               },
             },
           },

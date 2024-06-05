@@ -57,9 +57,48 @@ Router.get("/Admin-GET-ONE/:adminId", async (req, res) => {
 });
 
 Router.post("/AdminRegister", async (req, res) => {
-  const { adminName, adminEmail, adminPassword, adminRole } = req.body;
+  const { adminName, adminEmail, adminUniqueId, adminPassword, adminRole } =
+    req.body;
   try {
-    if (validateEmail(adminEmail)) {
+    if (adminRole === "Doctor" || adminRole === "Nurse") {
+      if (validateEmail(adminEmail)) {
+        const emailExist = await AdminModel.findOne({ adminEmail: adminEmail });
+
+        const adminUniqueIdExist = await AdminModel.findOne({
+          adminUniqueId: adminUniqueId,
+        });
+
+        if (emailExist) {
+          return res
+            .status(400)
+            .json("Admin already exist with same email id!");
+        } else if (adminUniqueIdExist) {
+          return res.status(400).json("Admin unique Id already exist!");
+        } else {
+          bcrypt.hash(adminPassword, 10, async (error, hashedPassword) => {
+            if (error) {
+              return next(error);
+            }
+            const newAdmin = new AdminModel({
+              adminId: "ADM-" + generateUniqueId(),
+              adminName: adminName,
+              adminEmail: adminEmail,
+              adminUniqueId: adminUniqueId,
+              adminPassword: hashedPassword,
+              adminRole: adminRole,
+            });
+
+            return await newAdmin
+              .save()
+              .then(() =>
+                res
+                  .status(200)
+                  .json({ message: "Admin Registered successfully" })
+              );
+          });
+        }
+      }
+    } else if (validateEmail(adminEmail)) {
       const emailExist = await AdminModel.findOne({ adminEmail: adminEmail });
 
       if (emailExist) {
@@ -142,7 +181,11 @@ Router.post("/AdminLogin", async (req, res) => {
 Router.put("/Admin-PUT/:adminId", async (req, res) => {
   const AdminID = req.params.adminId;
 
-  const { adminName, adminPassword, adminRole } = req.body;
+  const {
+    adminName,
+    adminPassword,
+    // adminRole
+  } = req.body;
 
   console.log(req.body);
   try {
@@ -170,7 +213,7 @@ Router.put("/Admin-PUT/:adminId", async (req, res) => {
           adminPassword: adminPassword
             ? hashedPassword
             : AdminModel.adminPassword,
-          adminRole: adminRole ? adminRole : AdminModel.adminRole,
+          // adminRole: adminRole ? adminRole : AdminModel.adminRole,
         }
       );
 
