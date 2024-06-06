@@ -46,6 +46,9 @@ const IPDSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "IPDPatient",
     },
+    ipdPatientMainId: {
+      type: String,
+    },
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: "doctors",
