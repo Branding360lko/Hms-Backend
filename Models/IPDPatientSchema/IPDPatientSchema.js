@@ -68,6 +68,9 @@ const IPDPatientSchema = new Schema(
       type: String,
       required: true,
     },
+    ipdNurseId: {
+      type: String,
+    },
     ipdDepositAmount: {
       type: Number,
       required: true,
