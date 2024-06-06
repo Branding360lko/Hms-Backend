@@ -44,14 +44,50 @@ Router.get("/IPDPatientDischargeReciept-GET-ONE/:Id", async (req, res) => {
 
   try {
     const ipdPatientDischargeRecieptData =
-      await IPDPatientDischargeRecieptModel.findOne({ recieptId: id });
+      await IPDPatientDischargeRecieptModel.findOne({ IPDPatientRegId: id });
 
     if (!ipdPatientDischargeRecieptData) {
       return res
         .status(404)
         .json("IPD Patient Discharge Reciept Data Not Found");
     }
-    return res.status(200).json(ipdPatientDischargeRecieptData);
+
+    const IPDPatientData = await IPDPatientModel.aggregate([
+      {
+        $match: { mainId: ipdPatientDischargeRecieptData.IPDPatientRegId },
+      },
+      {
+        $lookup: {
+          from: "managebeds",
+          localField: "ipdBedNo", // Adjust this field as needed
+          foreignField: "bedId", // Adjust this field as needed
+          as: "bedData",
+        },
+      },
+      { $unwind: "$bedData" },
+      {
+        $lookup: {
+          from: "ipdnursedischargedetails",
+          localField: "mainId",
+          foreignField: "ipdPatientRegId",
+          as: "NurseDischargeData",
+        },
+      },
+      { $unwind: "$NurseDischargeData" },
+      {
+        $lookup: {
+          from: "ipddoctordischargedetails",
+          localField: "mainId",
+          foreignField: "ipdPatientRegId",
+          as: "DoctorDischargeData",
+        },
+      },
+      { $unwind: "$DoctorDischargeData" },
+    ]);
+    return res.status(200).json({
+      ipdPatientDischargeRecieptData: ipdPatientDischargeRecieptData,
+      IPDPatientData: IPDPatientData,
+    });
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }
@@ -60,6 +96,8 @@ Router.get("/IPDPatientDischargeReciept-GET-ONE/:Id", async (req, res) => {
 Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
   try {
     const id = req.params.Id;
+
+    const { BHT, surgery, result } = req.body;
 
     const ipdPatientCheck = await IPDPatientModel.findOne({
       mainId: id,
@@ -81,137 +119,151 @@ Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
           return res.status(404).json("IPD Patient Data Not Found");
         }
 
-        const totalTime = (time) => {
-          let pastDate = new Date(time);
-          let presentDate = new Date();
+        // const totalTime = (time) => {
+        //   let pastDate = new Date(time);
+        //   let presentDate = new Date();
 
-          let differenceInTime = presentDate.getTime() - pastDate.getTime();
+        //   let differenceInTime = presentDate.getTime() - pastDate.getTime();
 
-          let differenceInDays = Math.round(
-            differenceInTime / (1000 * 3600 * 24)
-          );
+        //   let differenceInDays = Math.round(
+        //     differenceInTime / (1000 * 3600 * 24)
+        //   );
 
-          return differenceInDays + 1;
-        };
+        //   return differenceInDays + 1;
+        // };
 
-        const totalCharges = (creationTime, charges) => {
-          let time = totalTime(creationTime);
+        // const totalCharges = (creationTime, charges) => {
+        //   let time = totalTime(creationTime);
 
-          let totalCharge = time * charges;
+        //   let totalCharge = time * charges;
 
-          return totalCharge;
-        };
+        //   return totalCharge;
+        // };
 
         if (ipdPatientUpdatedData) {
           // console.log(ipdPatientUpdatedData.createdAt);
           // console.log(totalCharges(ipdPatientUpdatedData.createdAt));
-
           const ManageBedsUpdatedData = await ManageBedsModel.findOneAndUpdate(
             {
               bedId: ipdPatientUpdatedData.ipdBedNo,
             },
             { bedAvailableOrNot: true }
           );
-
           if (ManageBedsUpdatedData) {
-            // console.log(totalCharges("2024-05-07T11:52:28.952+00:00", 500));
-            // console.log(totalTime("2024-05-07T11:52:28.952+00:00"));
-            // console.log(ManageBedsUpdatedData);
-            const ipdPatientDischargeRecieptCreation =
-              new IPDPatientDischargeRecieptModel({
-                recieptId: "IPD-R-" + generateUniqueId(),
-                uhid: ipdPatientUpdatedData?.ipdPatientId,
-                numberOfDays: totalTime(ipdPatientUpdatedData.createdAt),
-                totalbedCharges: totalCharges(
-                  ipdPatientUpdatedData.createdAt,
-                  ManageBedsUpdatedData.bedCharges
-                ),
-                totalNurseCharges: totalCharges(
-                  ipdPatientUpdatedData.createdAt,
-                  ManageBedsUpdatedData.nursingCharges
-                ),
-                totalEMOCharges: totalCharges(
-                  ipdPatientUpdatedData.createdAt,
-                  ManageBedsUpdatedData.EMOCharges
-                ),
-                totalBioWasteCharges: totalCharges(
-                  ipdPatientUpdatedData.createdAt,
-                  ManageBedsUpdatedData.bioWasteCharges
-                ),
-                totalSanitizationCharges: totalCharges(
-                  ipdPatientUpdatedData.createdAt,
-                  ManageBedsUpdatedData.sanitizationCharges
-                ),
-                subTotal:
-                  totalCharges(
-                    ipdPatientUpdatedData.createdAt,
-                    ManageBedsUpdatedData.bedCharges
-                  ) +
-                  totalCharges(
-                    ipdPatientUpdatedData.createdAt,
-                    ManageBedsUpdatedData.nursingCharges
-                  ) +
-                  totalCharges(
-                    ipdPatientUpdatedData.createdAt,
-                    ManageBedsUpdatedData.EMOCharges
-                  ) +
-                  totalCharges(
-                    ipdPatientUpdatedData.createdAt,
-                    ManageBedsUpdatedData.bioWasteCharges
-                  ) +
-                  totalCharges(
-                    ipdPatientUpdatedData.createdAt,
-                    ManageBedsUpdatedData.sanitizationCharges
-                  ),
-              });
+            //   // console.log(totalCharges("2024-05-07T11:52:28.952+00:00", 500));
+            //   // console.log(totalTime("2024-05-07T11:52:28.952+00:00"));
+            //   // console.log(ManageBedsUpdatedData);
+            //   const ipdPatientDischargeRecieptCreation =
+            //     new IPDPatientDischargeRecieptModel({
+            //       recieptId: "IPD-R-" + generateUniqueId(),
+            //       uhid: ipdPatientUpdatedData?.ipdPatientId,
+            //       numberOfDays: totalTime(ipdPatientUpdatedData.createdAt),
+            //       totalbedCharges: totalCharges(
+            //         ipdPatientUpdatedData.createdAt,
+            //         ManageBedsUpdatedData.bedCharges
+            //       ),
+            //       totalNurseCharges: totalCharges(
+            //         ipdPatientUpdatedData.createdAt,
+            //         ManageBedsUpdatedData.nursingCharges
+            //       ),
+            //       totalEMOCharges: totalCharges(
+            //         ipdPatientUpdatedData.createdAt,
+            //         ManageBedsUpdatedData.EMOCharges
+            //       ),
+            //       totalBioWasteCharges: totalCharges(
+            //         ipdPatientUpdatedData.createdAt,
+            //         ManageBedsUpdatedData.bioWasteCharges
+            //       ),
+            //       totalSanitizationCharges: totalCharges(
+            //         ipdPatientUpdatedData.createdAt,
+            //         ManageBedsUpdatedData.sanitizationCharges
+            //       ),
+            //       subTotal:
+            //         totalCharges(
+            //           ipdPatientUpdatedData.createdAt,
+            //           ManageBedsUpdatedData.bedCharges
+            //         ) +
+            //         totalCharges(
+            //           ipdPatientUpdatedData.createdAt,
+            //           ManageBedsUpdatedData.nursingCharges
+            //         ) +
+            //         totalCharges(
+            //           ipdPatientUpdatedData.createdAt,
+            //           ManageBedsUpdatedData.EMOCharges
+            //         ) +
+            //         totalCharges(
+            //           ipdPatientUpdatedData.createdAt,
+            //           ManageBedsUpdatedData.bioWasteCharges
+            //         ) +
+            //         totalCharges(
+            //           ipdPatientUpdatedData.createdAt,
+            //           ManageBedsUpdatedData.sanitizationCharges
+            //         ),
+            //     });
+            //   await ipdPatientDischargeRecieptCreation.save();
+            //   await IPDPatientDischargeRecieptModel.aggregate([
+            //     {
+            //       $group: {
+            //         _id: "$uhid", // group by a constant to calculate the sum across all documents
+            //         total: {
+            //           $sum: {
+            //             $add: [
+            //               "$totalbedCharges",
+            //               "$totalNurseCharges",
+            //               "$totalEMOCharges",
+            //               "$totalBioWasteCharges",
+            //               "$totalSanitizationCharges",
+            //             ],
+            //           },
+            //         }, // calculate the sum of totalAmount
+            //       },
+            //     },
+            //     {
+            //       $project: {
+            //         _id: 1, // exclude the _id field from the output
+            //         total: 1, // include the total field in the output
+            //       },
+            //     },
+            //     {
+            //       $out: "FinalBill", // store the result in a new collection called "totals"
+            //     },
+            //   ])
+            //     .then((res) => {
+            //       console.log(res);
+            //     })
+            //     .catch((err) => {
+            //       console.log(err);
+            //     });
+            // return res
+            //   .status(200)
+            //   .json({ message: "IPD Patient Discharged Successfully" });
 
-            await ipdPatientDischargeRecieptCreation.save();
+            // ---------------
+            const newDischargeReciept = new IPDPatientDischargeRecieptModel({
+              recieptId: "IPD-R-" + generateUniqueId(),
+              IPDPatientRegId: ipdPatientUpdatedData.mainId,
+              patientUHID: ipdPatientUpdatedData.ipdPatientId,
+              BHT: BHT,
+              surgery: surgery,
+              bedId: ipdPatientUpdatedData.ipdBedNo,
+              dateAndTimeOfDischarge: new Date().toLocaleString(),
+              result: result,
+            });
 
-            await IPDPatientDischargeRecieptModel.aggregate([
-              {
-                $group: {
-                  _id: "$uhid", // group by a constant to calculate the sum across all documents
-                  total: {
-                    $sum: {
-                      $add: [
-                        "$totalbedCharges",
-                        "$totalNurseCharges",
-                        "$totalEMOCharges",
-                        "$totalBioWasteCharges",
-                        "$totalSanitizationCharges",
-                      ],
-                    },
-                  }, // calculate the sum of totalAmount
-                },
-              },
-              {
-                $project: {
-                  _id: 1, // exclude the _id field from the output
-                  total: 1, // include the total field in the output
-                },
-              },
-              {
-                $out: "FinalBill", // store the result in a new collection called "totals"
-              },
-            ])
-              .then((res) => {
-                console.log(res);
+            return await newDischargeReciept.save().then((data) =>
+              res.status(200).json({
+                message: "IPD Patient Discharged Successfully",
+                data: data,
               })
-              .catch((err) => {
-                console.log(err);
-              });
-
-            return res
-              .status(200)
-              .json({ message: "IPD Patient Discharged Successfully" });
+            );
           }
         }
       } else {
-        console.log(false);
+        res.status(500).json({ error: "Something went wrong" });
       }
     }
   } catch (error) {
-    res.status(500).json("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
