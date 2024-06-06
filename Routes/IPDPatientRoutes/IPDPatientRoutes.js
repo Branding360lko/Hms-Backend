@@ -786,92 +786,136 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           console.log(err);
         });
 
-      const totalTime = (time) => {
-        let pastDate = new Date(time);
-        let presentDate = new Date();
+      const autoChargeCalculation = await IPDPatientModel.aggregate([
+        {
+          $match: { mainId: IPDPatientBalance.ipdPatientRegId },
+        },
+        {
+          $lookup: {
+            from: "managebeds",
+            localField: "ipdBedNo", // Adjust this field as needed
+            foreignField: "bedId", // Adjust this field as needed
+            as: "bedData",
+          },
+        },
+        {
+          $unwind: "$bedData",
+        },
+        {
+          $addFields: {
+            days: {
+              $dateDiff: {
+                startDate: "$createdAt",
+                endDate: "$$NOW",
+                unit: "day",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            bedData: 1,
+            // beddata: 1,
+            days: 1,
+            bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
+            nursingTotalCharges: {
+              $multiply: ["$days", "$bedData.nursingCharges"],
+            },
+            EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+            bioWasteTotalCharges: {
+              $multiply: ["$days", "$bedData.bioWasteCharges"],
+            },
+            sanitizationTotalCharges: {
+              $multiply: ["$days", "$bedData.sanitizationCharges"],
+            },
+          },
+        },
+      ]);
 
-        let differenceInTime = presentDate.getTime() - pastDate.getTime();
+      // console.log(autoChargeCalculation);
 
-        let differenceInDays = Math.round(
-          differenceInTime / (1000 * 3600 * 24)
-        );
+      // const totalTimeCalculation = (time) => {
+      //   let pastDate = new Date(time);
+      //   let presentDate = new Date();
 
-        return differenceInDays + 1;
-      };
+      //   let differenceInTime = presentDate.getTime() - pastDate.getTime();
 
-      const totalCharges = (creationTime, charges) => {
-        let time = totalTime(creationTime);
+      //   let differenceInDays = Math.round(
+      //     differenceInTime / (1000 * 3600 * 24)
+      //   );
 
-        let totalCharge = time * charges;
+      //   return differenceInDays + 1;
+      // };
 
-        return totalCharge;
-      };
+      // const totalChargesCalculation = (creationTime, charges) => {
+      //   let time = totalTimeCalculation(creationTime);
 
-      const ManageBedsPriceData = await ManageBedsModel.findOne({
-        bedId: IPDPatient.ipdBedNo,
+      //   let totalCharge = time * charges;
+
+      //   return totalCharge;
+      // };
+
+      // const ManageBedsPriceData = await ManageBedsModel.findOne({
+      //   bedId: IPDPatient.ipdBedNo,
+      // });
+
+      // if (!ManageBedsPriceData) {
+      //   return res.status(404).json("IPD Patient Bed Not Found!");
+      // }
+
+      // if (ManageBedsPriceData) {
+      //   const ipdPatientAutoCharges = {
+      //     numberOfDays: totalTimeCalculation(IPDPatient.createdAt),
+      //     totalbedCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.bedCharges
+      //     ),
+      //     totalNurseCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.nursingCharges
+      //     ),
+      //     totalEMOCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.EMOCharges
+      //     ),
+      //     totalBioWasteCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.bioWasteCharges
+      //     ),
+      //     totalSanitizationCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.sanitizationCharges
+      //     ),
+      //     subTotal:
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.bedCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.nursingCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.EMOCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.bioWasteCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.sanitizationCharges
+      //       ),
+      //   };
+
+      return res.status(200).json({
+        data: IPDPatientBalance,
+        totalMedicalCharges: totalMedicalCharges,
+        totalLabTestCharges: totalLabTestCharges,
+        autoCharges: autoChargeCalculation,
       });
-
-      if (!ManageBedsPriceData) {
-        return res.status(404).json("IPD Patient Bed Not Found!");
-      }
-
-      if (ManageBedsPriceData) {
-        const ipdPatientAutoCharges = {
-          numberOfDays: totalTime(IPDPatient.createdAt),
-          totalbedCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.bedCharges
-          ),
-          totalNurseCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.nursingCharges
-          ),
-          totalEMOCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.EMOCharges
-          ),
-          totalBioWasteCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.bioWasteCharges
-          ),
-          totalSanitizationCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.sanitizationCharges
-          ),
-          subTotal:
-            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.bedCharges) +
-            totalCharges(
-              IPDPatient.createdAt,
-              ManageBedsPriceData.nursingCharges
-            ) +
-            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.EMOCharges) +
-            totalCharges(
-              IPDPatient.createdAt,
-              ManageBedsPriceData.bioWasteCharges
-            ) +
-            totalCharges(
-              IPDPatient.createdAt,
-              ManageBedsPriceData.sanitizationCharges
-            ),
-        };
-
-        return res.status(200).json({
-          data: IPDPatientBalance,
-          totalMedicalCharges: totalMedicalCharges,
-          totalLabTestCharges: totalLabTestCharges,
-          autoCharges: ipdPatientAutoCharges,
-          total:
-            totalMedicalCharges +
-            totalLabTestCharges +
-            ipdPatientAutoCharges?.subTotal,
-          remainingBalance:
-            IPDPatientBalance?.balance[IPDPatientBalance?.balance?.length - 1]
-              .totalBalance -
-            (totalMedicalCharges +
-              totalLabTestCharges +
-              ipdPatientAutoCharges?.subTotal),
-        });
-      }
+      // }
     }
   } catch (error) {
     res.status(500).json("Internal Server Error");
