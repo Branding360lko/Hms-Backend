@@ -39,6 +39,7 @@ Router.get("/OPD-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.get("/Opd-get-dat-with-doctor");
 Router.post("/OPD-Create", upload.none(), async (req, res) => {
   const { medicine, test, Symptoms, Note, OpdPatientData, isPatientsChecked } =
     req.body;

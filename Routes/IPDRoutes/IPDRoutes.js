@@ -105,7 +105,7 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
     const IpdData = await IPD.aggregate([
       {
         $match: {
-          ipdPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
+          ipdPatientMainId: Id,
         },
       },
       // {
@@ -195,7 +195,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
     const IpdData = await IPD.aggregate([
       {
         $match: {
-          ipdPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
+          ipdPatientMainId: Id,
         },
       },
 
