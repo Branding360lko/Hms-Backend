@@ -60,7 +60,7 @@ Router.get("/IPDPatient-GET-ONE/:Id", async (req, res) => {
 
 Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
   try {
-    const allBalances = await IPDPatientBalanceModel.find();
+    // const allBalances = await IPDPatientBalanceModel.find();
 
     // console.log(allBalances);
 
@@ -343,6 +343,14 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
     // ]);
 
     const medicineDoctorTestBalanceCalculation = await IPD.aggregate([
+      // {
+      //   $lookup: {
+      //     from: "ipdpatientbalances",
+      //     localField: "ipdPatientData",
+      //     foreignField: "ipdPatientRegId",
+      //     as: "IPDPatientBalanceData",
+      //   },
+      // },
       {
         $lookup: {
           from: "ipdpatientbalances",
@@ -460,7 +468,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           // totalAddedBalance: { $first: "$balance.addedBalance" },
           charges: { $first: "$IPDPatientBalanceData.charges" },
           labTestCharges: { $first: "$IPDPatientBalanceData.labTestCharges" },
-          overallTotalMedicinePrice: { $first: "$overallTotalTestPrice" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
         },
@@ -476,7 +484,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           totalAddedBalance: { $sum: "$balance.addedBalance" },
           charges: { $first: "$charges" },
           labTestCharges: { $first: "$labTestCharges" },
-          overallTotalMedicinePrice: { $first: "$overallTotalTestPrice" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
         },
@@ -498,7 +506,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
-          overallTotalMedicinePrice: { $first: "$overallTotalTestPrice" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           ipdPatientRegId: { $first: "$ipdPatientRegId" },
@@ -532,7 +540,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           ipdPatientRegId: { $first: "$ipdPatientRegId" },
           // labTestCharges: { $first: "$labTestCharges" },
           // totalBalance: { $first: "$totalBalance" },
-          overallTotalMedicinePrice: { $first: "$overallTotalTestPrice" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           totalAddedBalance: { $first: "$totalAddedBalance" },
@@ -568,7 +576,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           totalAddedBalance: { $first: "$totalAddedBalance" },
           totalCharges: { $first: "$totalCharges" },
           totalLabTestCharges: { $first: "$totalLabTestCharges" },
-          overallTotalMedicinePrice: { $first: "$overallTotalTestPrice" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           labTestCharges: { $first: "$labTestCharges" },
@@ -598,7 +606,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           totalAddedBalance: { $first: "$totalAddedBalance" },
           totalCharges: { $first: "$totalCharges" },
           totalLabTestCharges: { $first: "$totalLabTestCharges" },
-          overallTotalMedicinePrice: { $first: "$overallTotalTestPrice" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           creationDate: { $first: "$creationDate" },
