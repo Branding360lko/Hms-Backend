@@ -339,6 +339,7 @@ Router.put(
       disease_Diagnose,
       adviseDuringDischarge,
     } = req.body;
+
     try {
       const updatedIPDDoctorDischargeDetails =
         await IPDDoctorDischargeDetailsModel.findOneAndUpdate(
