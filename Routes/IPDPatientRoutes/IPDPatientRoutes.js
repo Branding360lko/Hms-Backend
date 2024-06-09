@@ -40,23 +40,6 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-Router.get("/ipd-patients/:DoctorId", async (req, res) => {
-  const DoctorId = req.params.DoctorId;
-  try {
-    const ipdPatients = await IPDPatientModel.find({
-      ipdDoctorId: DoctorId,
-    });
-    if (!ipdPatients) {
-      return res.status(403).json({ message: "No Data Found" });
-    }
-    return res
-      .status(200)
-      .json({ message: "Data Fetch Successfully", data: ipdPatients });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json("internal server error");
-  }
-});
 
 Router.get("/IPDPatient-GET-ONE/:Id", async (req, res) => {
   const id = req.params.Id;

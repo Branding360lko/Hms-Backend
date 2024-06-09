@@ -5,6 +5,7 @@ const Router = express.Router();
 const IPD = require("../../Models/IPDSchema/IPDSchema");
 const multer = require("multer");
 const mongoose = require("mongoose");
+const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -25,6 +26,55 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({ storage, fileFilter });
 
+Router.get(
+  "/get-patients-details-with-ipdId/:Id",
+  upload.none(),
+  async (req, res) => {
+    const Id = req.params.Id;
+    try {
+      const patientsData = await IPDPatientModel.aggregate([
+        {
+          $match: {
+            ipdPatientId: Id,
+          },
+        },
+        {
+          $lookup: {
+            from: "patients",
+            localField: "ipdPatientId",
+            foreignField: "patientId",
+            as: "PatientData",
+          },
+        },
+      ]);
+      if (!patientsData) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      return res
+        .status(200)
+        .json({ message: "Data Fetch Successfully", data: patientsData });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
+Router.get("/ipd-patients/:DoctorId", async (req, res) => {
+  const DoctorId = req.params.DoctorId;
+  try {
+    const ipdPatients = await IPDPatientModel.find({
+      ipdDoctorId: DoctorId,
+    });
+    if (!ipdPatients) {
+      return res.status(403).json({ message: "No Data Found" });
+    }
+    return res
+      .status(200)
+      .json({ message: "Data Fetch Successfully", data: ipdPatients });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("internal server error");
+  }
+});
 Router.get("/All-Ipd-Routes", async (req, res) => {
   try {
     const ipdData = await IPD.find({});
