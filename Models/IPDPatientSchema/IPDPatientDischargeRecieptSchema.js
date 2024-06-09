@@ -26,7 +26,7 @@ const IPDPatientDischargeRecieptSchema = new Schema(
       type: String,
     },
     dateAndTimeOfDischarge: {
-      type: String,
+      type: Date,
     },
     result: {
       type: String,

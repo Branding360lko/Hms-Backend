@@ -246,7 +246,7 @@ Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
               BHT: BHT,
               surgery: surgery,
               bedId: ipdPatientUpdatedData.ipdBedNo,
-              dateAndTimeOfDischarge: new Date().toLocaleString(),
+              dateAndTimeOfDischarge: new Date(),
               result: result,
             });
 
