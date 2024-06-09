@@ -214,8 +214,6 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           as: "ReferedDoctor",
         },
       },
-      { $unwind: { path: "$doctorData", preserveNullAndEmptyArrays: true } },
-      { $unwind: { path: "$ReferedDoctor", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "doctorprofessionaldetails",
@@ -238,8 +236,8 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           VisitDateTime: 1,
           doctorData: 1,
           ReferedDoctor: 1,
-          doctorFeesDatails: 1,
-          RefereddoctorFeesDatails: 1,
+          doctorFeesDatails: "$doctorFeesDatails.doctorFee",
+          RefereddoctorFeesDatails: "$RefereddoctorFeesDatails.doctorFee",
           DailyMedicinePriceTotal: { $sum: "$medicine.Price" },
           DailyTestPriceTotal: { $sum: "$test.Price" },
         },
@@ -250,9 +248,24 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           DailyMedicinePriceTotal: { $first: "$DailyMedicinePriceTotal" },
           DailyTestPriceTotal: { $first: "$DailyTestPriceTotal" },
           visitDate: { $first: "$VisitDateTime" },
-          doctorFeesDatails: { $first: "$doctorFeesDatails.doctorFee" },
-          RefereddoctorFeesDatails: {
-            $first: "$RefereddoctorFeesDatails.doctorFee",
+          doctorFeesDatails: { $first: "$doctorFeesDatails" },
+          RefereddoctorFeesDatails: { $first: "$RefereddoctorFeesDatails" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          DailyMedicinePriceTotal: 1,
+          DailyTestPriceTotal: 1,
+          visitDate: 1,
+          doctorFeesDatails: 1,
+          RefereddoctorFeesDatails: 1,
+          doctorVisitCharge: {
+            $cond: {
+              if: { $ne: ["$RefereddoctorFeesDatails", []] },
+              then: { $arrayElemAt: ["$RefereddoctorFeesDatails", 0] },
+              else: { $arrayElemAt: ["$doctorFeesDatails", 0] },
+            },
           },
         },
       },
@@ -262,15 +275,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           overAllData: { $push: "$$ROOT" },
           overallTotalMedicinePrice: { $sum: "$DailyMedicinePriceTotal" },
           overallTotalTestPrice: { $sum: "$DailyTestPriceTotal" },
-          overallDoctorVisitCharge: {
-            $sum: {
-              $cond: {
-                if: { $ne: ["$RefereddoctorFeesDatails", []] },
-                then: { $arrayElemAt: ["$RefereddoctorFeesDatails", 0] },
-                else: { $arrayElemAt: ["$doctorFeesDatails", 0] },
-              },
-            },
-          },
+          overallDoctorVisitCharge: { $sum: "$doctorVisitCharge" },
         },
       },
       {
@@ -284,11 +289,11 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
       },
     ]);
 
-    if (!IpdData.length) {
+    if (IpdData.length === 0) {
       return res.status(403).json({ message: "No Data Found" });
     }
 
-    res.status(200).json(IpdData[0]);
+    res.status(200).json(IpdData);
   } catch (error) {
     console.log(error);
     res.status(500).json("internal server error");
