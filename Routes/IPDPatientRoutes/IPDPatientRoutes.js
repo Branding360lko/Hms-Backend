@@ -1176,7 +1176,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
       ipdPatientRegId: id,
     });
 
-    const IPDPatient = await IPDPatientModel.findOne({ mainId: id });
+    // const IPDPatient = await IPDPatientModel.findOne({ mainId: id });
 
     if (!IPDPatientBalance) {
       return res.status(404).json("IPD Patient Balance Data Not Found");
@@ -1271,7 +1271,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           },
         },
         {
-          $unwind: "$bedData",
+          $unwind: { path: "$bedData", preserveNullAndEmptyArrays: true },
         },
         {
           $lookup: {
@@ -1282,7 +1282,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           },
         },
         {
-          $unwind: "$dischargeData",
+          $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
         },
         {
           $addFields: {
