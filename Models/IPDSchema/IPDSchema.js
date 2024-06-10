@@ -67,6 +67,10 @@ const IPDSchema = new Schema(
       require: true,
       default: false,
     },
+    submittedBy: {
+      type: String,
+      default: "Assigned Doctor",
+    },
   },
   { timestamps: true }
 );

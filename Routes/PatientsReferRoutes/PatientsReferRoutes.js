@@ -89,8 +89,39 @@ Router.get("/get-all-refered-patients", async (req, res) => {
 });
 Router.get("/get-one-refered-patients/:Id", async (req, res) => {
   const Id = req.params.Id;
+
   try {
-    const referedPatient = await PatientsRefer.findById({ _id: Id });
+    const referedPatient = await PatientsRefer.aggregate([
+      {
+        $match: {
+          _id: mongoose.Types.ObjectId.createFromHexString(Id),
+        },
+      },
+      {
+        $lookup: {
+          from: "ipdpatients",
+          localField: "ipdPatient",
+          foreignField: "_id",
+          as: "IpdPatientDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "referringDoctor",
+          foreignField: "_id",
+          as: "referringDoctor",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "ReferredDoctor",
+          foreignField: "_id",
+          as: "ReferredDoctor",
+        },
+      },
+    ]);
     if (!referedPatient) {
       return res.status(403).json({ message: "No Data Found By This Id" });
     }

@@ -100,17 +100,10 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
     doctorId,
     VisitDateTime,
     ReferedDoctorId,
+    ipdPatientMainId,
+    submittedBy,
   } = req.body;
-  console.log(
-    medicine,
-    test,
-    Symptoms,
-    Note,
-    ipdPatientData,
-    isPatientsChecked,
-    doctorId,
-    VisitDateTime
-  );
+
   try {
     const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
     const test = req.body.test ? JSON.parse(req.body.test) : [];
@@ -133,6 +126,8 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       doctorId,
       VisitDateTime,
       ReferedDoctorId,
+      ipdPatientMainId,
+      submittedBy,
     });
     const ipdData = await IPD.findById(ipd?._id);
 

@@ -152,6 +152,7 @@ Router.post("/AdminLogin", async (req, res) => {
         adminId: admin.adminId,
         adminEmail: admin.adminEmail,
         adminRole: admin.adminRole,
+        adminUniqueId: admin.adminUniqueId,
         adminName: admin.adminName,
         isDeleted: admin.isDeleted,
       },
@@ -171,6 +172,7 @@ Router.post("/AdminLogin", async (req, res) => {
       token,
       data: admin,
       adminRole: admin.adminRole,
+      adminUniqueId: admin.adminUniqueId,
       message: `${admin.adminEmail} logged in successfully`,
     });
   } catch (error) {
@@ -181,11 +183,7 @@ Router.post("/AdminLogin", async (req, res) => {
 Router.put("/Admin-PUT/:adminId", async (req, res) => {
   const AdminID = req.params.adminId;
 
-  const {
-    adminName,
-    adminPassword,
-    // adminRole
-  } = req.body;
+  const { adminName, adminPassword, adminRole } = req.body;
 
   console.log(req.body);
   try {
@@ -213,7 +211,7 @@ Router.put("/Admin-PUT/:adminId", async (req, res) => {
           adminPassword: adminPassword
             ? hashedPassword
             : AdminModel.adminPassword,
-          // adminRole: adminRole ? adminRole : AdminModel.adminRole,
+          adminRole: adminRole ? adminRole : AdminModel.adminRole,
         }
       );
 

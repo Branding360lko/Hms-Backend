@@ -17,6 +17,8 @@ const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema"
 
 const IPDNurseDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPDNurseDischargeDetailsSchema");
 
+const IPD = require("../../Models/IPDSchema/IPDSchema");
+
 const generateUniqueId = () => {
   const date = new Date();
   const year = date.getFullYear().toString();
@@ -58,7 +60,7 @@ Router.get("/IPDPatient-GET-ONE/:Id", async (req, res) => {
 
 Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
   try {
-    const allBalances = await IPDPatientBalanceModel.find();
+    // const allBalances = await IPDPatientBalanceModel.find();
 
     // console.log(allBalances);
 
@@ -158,13 +160,362 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
     //   },
     // ]);
 
-    const balanceCalculation = await IPDPatientBalanceModel.aggregate([
+    // const balanceCalculation = await IPDPatientBalanceModel.aggregate([
+    //   {
+    //     $unwind: "$balance",
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       // totalBalance: { $sum: "$balance.totalBalance" },
+    //       totalAddedBalance: { $sum: "$balance.addedBalance" },
+    //       charges: { $first: "$charges" },
+    //       labTestCharges: { $first: "$labTestCharges" },
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$charges",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$charges.items",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       labTestCharges: { $first: "$labTestCharges" },
+    //       // totalBalance: { $first: "$totalBalance" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: {
+    //         $sum: {
+    //           $multiply: ["$charges.items.quantity", "$charges.items.price"],
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$labTestCharges",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$labTestCharges.items",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       // labTestCharges: { $first: "$labTestCharges" },
+    //       // totalBalance: { $first: "$totalBalance" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: { $first: "$totalCharges" },
+    //       totalLabTestCharges: {
+    //         $sum: {
+    //           $multiply: [
+    //             "$labTestCharges.items.quantity",
+    //             "$labTestCharges.items.price",
+    //           ],
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "ipdpatients",
+    //       localField: "ipdPatientRegId", // Adjust this field as needed
+    //       foreignField: "mainId", // Adjust this field as needed
+    //       as: "IPDPatientData",
+    //     },
+    //   },
+    //   {
+    //     $unwind: "$IPDPatientData",
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientObjectId: { $first: "$_id" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: { $first: "$totalCharges" },
+    //       totalLabTestCharges: { $first: "$totalLabTestCharges" },
+    //       labTestCharges: { $first: "$labTestCharges" },
+    //       creationDate: { $first: "$IPDPatientData.createdAt" },
+    //       bedId: { $first: "$IPDPatientData.ipdBedNo" },
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "managebeds",
+    //       localField: "bedId", // Adjust this field as needed
+    //       foreignField: "bedId", // Adjust this field as needed
+    //       as: "BedData",
+    //     },
+    //   },
+    //   {
+    //     $unwind: "$BedData",
+    //   },
+
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientObjectId: { $first: "$_id" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: { $first: "$totalCharges" },
+    //       totalLabTestCharges: { $first: "$totalLabTestCharges" },
+    //       creationDate: { $first: "$creationDate" },
+    //       beddata: { $first: "$BedData" },
+    //     },
+    //   },
+    //   {
+    //     $addFields: {
+    //       days: {
+    //         $dateDiff: {
+    //           startDate: "$creationDate",
+    //           endDate: "$$NOW",
+    //           unit: "day",
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       balanceID: 1,
+    //       uhid: 1,
+    //       ipdPatientObjectId: 1,
+    //       ipdPatientRegId: 1,
+    //       totalAddedBalance: 1,
+    //       totalCharges: 1,
+    //       totalLabTestCharges: 1,
+    //       creationDate: 1,
+    //       // beddata: 1,
+    //       days: 1,
+    //       bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
+    //       nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
+    //       EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
+    //       bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+    //       sanitizationCharges: {
+    //         $multiply: ["$days", "$beddata.sanitizationCharges"],
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $addFields: {
+    //       remainingBalance: {
+    //         $subtract: [
+    //           "$totalAddedBalance",
+    //           {
+    //             $add: [
+    //               "$totalCharges",
+    //               "$totalLabTestCharges",
+    //               "$bedCharges",
+    //               "$nursingCharges",
+    //               "$EMOCharges",
+    //               "$bioWasteCharges",
+    //               "$sanitizationCharges",
+    //             ],
+    //           },
+    //         ],
+    //       },
+    //     },
+    //   },
+    // ]);
+
+    const remainingBalanceCalc = await IPDPatientModel.aggregate([
+      // {
+      //   $lookup: {
+      //     from: "ipdpatientbalances",
+      //     localField: "mainId",
+      //     foreignField: "ipdPatientRegId",
+      //     as: "IPDPatientBalanceData",
+      //   },
+      // },
+      // {
+      //   $unwind: {
+      //     path: "$IPDPatientBalanceData",
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
       {
-        $unwind: "$balance",
+        $lookup: {
+          from: "ipds",
+          localField: "mainId",
+          foreignField: "ipdPatientMainId",
+          as: "IPDPatientMEDDOCLABData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$IPDPatientMEDDOCLABData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "IPDPatientMEDDOCLABData.doctorId",
+          foreignField: "_id",
+          as: "doctorData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "IPDPatientMEDDOCLABData.ReferedDoctorId",
+          foreignField: "_id",
+          as: "ReferedDoctor",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "doctorData.doctorId",
+          foreignField: "doctorId",
+          as: "doctorFeesDatails",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "ReferedDoctor.doctorId",
+          foreignField: "doctorId",
+          as: "RefereddoctorFeesDatails",
+        },
+      },
+      {
+        $addFields: {
+          doctorFees: {
+            $cond: {
+              if: { $eq: [{ $size: "$doctorFeesDatails" }, 0] },
+              then: 0,
+              else: { $arrayElemAt: ["$doctorFeesDatails.doctorFee", 0] },
+            },
+          },
+          RefereddoctorFees: {
+            $cond: {
+              if: { $eq: [{ $size: "$RefereddoctorFeesDatails" }, 0] },
+              then: 0,
+              else: {
+                $arrayElemAt: ["$RefereddoctorFeesDatails.doctorFee", 0],
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: "$mainId",
+          ipdBedNo: 1,
+          ipdPatientDischarged: 1,
+          createdAt: 1,
+          ipdPatientId: "$IPDPatientMEDDOCLABData.ipdPatientData",
+          VisitDateTime: "$IPDPatientMEDDOCLABData.VisitDateTime",
+          doctorData: 1,
+          ReferedDoctor: 1,
+          doctorFees: "$doctorFees",
+          RefereddoctorFees: "$RefereddoctorFees",
+          DailyMedicinePriceTotal: {
+            $sum: "$IPDPatientMEDDOCLABData.medicine.Price",
+          },
+          DailyTestPriceTotal: { $sum: "$IPDPatientMEDDOCLABData.test.Price" },
+        },
       },
       {
         $group: {
           _id: "$_id",
+          ipdBedNo: { $first: "$ipdBedNo" },
+          ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          creationDate: { $first: "$createdAt" },
+          visitDate: { $first: "$VisitDateTime" },
+          totalDoctorFees: { $sum: "$doctorFees" },
+          totalRefereddoctorFees: { $sum: "$RefereddoctorFees" },
+          totalDailyMedicinePriceTotal: { $sum: "$DailyMedicinePriceTotal" },
+          totalDailyTestPriceTotal: { $sum: "$DailyTestPriceTotal" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          ipdBedNo: 1,
+          ipdPatientDischarged: 1,
+          creationDate: 1,
+          totalDailyMedicinePriceTotal: 1,
+          totalDailyTestPriceTotal: 1,
+          visitDate: 1,
+          totalDoctorFees: 1,
+          totalRefereddoctorFees: 1,
+        },
+      },
+      {
+        $addFields: {
+          overallDoctorVisitCharge: {
+            $add: ["$totalDoctorFees", "$totalRefereddoctorFees"],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "ipdpatientbalances",
+          localField: "_id",
+          foreignField: "ipdPatientRegId",
+          as: "IPDPatientBalanceData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$IPDPatientBalanceData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          ipdBedNo: { $first: "$ipdBedNo" },
+          ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          creationDate: { $first: "$creationDate" },
+          balanceID: { $first: "$IPDPatientBalanceData.balanceID" },
+          uhid: { $first: "$IPDPatientBalanceData.uhid" },
+          ipdPatientRegId: { $first: "$IPDPatientBalanceData.ipdPatientRegId" },
+          // totalBalance: { $sum: "$balance.totalBalance" },
+          balance: { $first: "$IPDPatientBalanceData.balance" },
+          // totalAddedBalance: { $first: "$balance.addedBalance" },
+          charges: { $first: "$IPDPatientBalanceData.charges" },
+          labTestCharges: { $first: "$IPDPatientBalanceData.labTestCharges" },
+          overallTotalMedicinePrice: {
+            $first: "$totalDailyMedicinePriceTotal",
+          },
+          overallTotalTestPrice: { $first: "$totalDailyTestPriceTotal" },
+          overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+        },
+      },
+      { $unwind: { path: "$balance", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$_id",
+          ipdBedNo: { $first: "$ipdBedNo" },
+          ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
           ipdPatientRegId: { $first: "$ipdPatientRegId" },
@@ -172,6 +523,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           totalAddedBalance: { $sum: "$balance.addedBalance" },
           charges: { $first: "$charges" },
           labTestCharges: { $first: "$labTestCharges" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+          overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+          overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
         },
       },
       {
@@ -189,8 +543,14 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
       {
         $group: {
           _id: "$_id",
+          ipdBedNo: { $first: "$ipdBedNo" },
+          ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+          overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+          overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           ipdPatientRegId: { $first: "$ipdPatientRegId" },
           labTestCharges: { $first: "$labTestCharges" },
           // totalBalance: { $first: "$totalBalance" },
@@ -217,11 +577,17 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
       {
         $group: {
           _id: "$_id",
+          ipdBedNo: { $first: "$ipdBedNo" },
+          ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
           ipdPatientRegId: { $first: "$ipdPatientRegId" },
           // labTestCharges: { $first: "$labTestCharges" },
           // totalBalance: { $first: "$totalBalance" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+          overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+          overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           totalAddedBalance: { $first: "$totalAddedBalance" },
           totalCharges: { $first: "$totalCharges" },
           totalLabTestCharges: {
@@ -236,61 +602,66 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
       },
       {
         $lookup: {
-          from: "ipdpatients",
-          localField: "ipdPatientRegId", // Adjust this field as needed
-          foreignField: "mainId", // Adjust this field as needed
-          as: "IPDPatientData",
-        },
-      },
-      {
-        $unwind: "$IPDPatientData",
-      },
-      {
-        $group: {
-          _id: "$_id",
-          balanceID: { $first: "$balanceID" },
-          uhid: { $first: "$uhid" },
-          ipdPatientRegId: { $first: "$ipdPatientRegId" },
-          totalAddedBalance: { $first: "$totalAddedBalance" },
-          totalCharges: { $first: "$totalCharges" },
-          totalLabTestCharges: { $first: "$totalLabTestCharges" },
-          labTestCharges: { $first: "$labTestCharges" },
-          creationDate: { $first: "$IPDPatientData.createdAt" },
-          bedId: { $first: "$IPDPatientData.ipdBedNo" },
-        },
-      },
-      {
-        $lookup: {
           from: "managebeds",
-          localField: "bedId", // Adjust this field as needed
+          localField: "ipdBedNo", // Adjust this field as needed
           foreignField: "bedId", // Adjust this field as needed
           as: "BedData",
         },
       },
       {
-        $unwind: "$BedData",
+        $unwind: { path: "$BedData", preserveNullAndEmptyArrays: true },
       },
-
       {
         $group: {
           _id: "$_id",
+          ipdBedNo: { $first: "$ipdBedNo" },
+          ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
+          ipdPatientObjectId: { $first: "$_id" },
           ipdPatientRegId: { $first: "$ipdPatientRegId" },
           totalAddedBalance: { $first: "$totalAddedBalance" },
           totalCharges: { $first: "$totalCharges" },
           totalLabTestCharges: { $first: "$totalLabTestCharges" },
+          overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+          overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+          overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           creationDate: { $first: "$creationDate" },
           beddata: { $first: "$BedData" },
         },
       },
       {
+        $lookup: {
+          from: "ipdpatientdischargereciepts",
+          localField: "_id", // Adjust this field as needed
+          foreignField: "IPDPatientRegId", // Adjust this field as needed
+          as: "dischargeData",
+        },
+      },
+      {
+        $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
+      },
+      {
         $addFields: {
           days: {
-            $dateDiff: {
-              startDate: "$creationDate",
-              endDate: "$$NOW",
-              unit: "day",
+            $cond: {
+              if: { $eq: ["$ipdPatientDischarged", true] },
+              then: {
+                // days: "$dischargeData.dateAndTimeOfDischarge",
+                $dateDiff: {
+                  startDate: "$creationDate",
+                  endDate: "$dischargeData.dateAndTimeOfDischarge",
+                  unit: "day",
+                },
+              },
+              else: {
+                $dateDiff: {
+                  startDate: "$creationDate",
+                  endDate: "$$NOW",
+                  unit: "day",
+                },
+              },
             },
           },
         },
@@ -299,10 +670,38 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
         $project: {
           balanceID: 1,
           uhid: 1,
+          ipdPatientObjectId: 1,
           ipdPatientRegId: 1,
           totalAddedBalance: 1,
           totalCharges: 1,
           totalLabTestCharges: 1,
+          overallTotalMedicinePrice: 1,
+          overallTotalTestPrice: 1,
+          overallDoctorVisitCharge: 1,
+          creationDate: 1,
+          beddata: 1,
+          days: { $add: ["$days", 1] },
+          // bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
+          // nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
+          // EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
+          // bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+          // sanitizationCharges: {
+          //   $multiply: ["$days", "$beddata.sanitizationCharges"],
+          // },
+        },
+      },
+      {
+        $project: {
+          balanceID: 1,
+          uhid: 1,
+          ipdPatientObjectId: 1,
+          ipdPatientRegId: 1,
+          totalAddedBalance: 1,
+          totalCharges: 1,
+          totalLabTestCharges: 1,
+          overallTotalMedicinePrice: 1,
+          overallTotalTestPrice: 1,
+          overallDoctorVisitCharge: 1,
           creationDate: 1,
           // beddata: 1,
           days: 1,
@@ -317,6 +716,29 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
       },
       {
         $addFields: {
+          autoChargesTotal: {
+            $add: [
+              "$bedCharges",
+              "$nursingCharges",
+              "$EMOCharges",
+              "$bioWasteCharges",
+              "$sanitizationCharges",
+            ],
+          },
+          finalTotal: {
+            $add: [
+              "$totalCharges",
+              "$totalLabTestCharges",
+              "$bedCharges",
+              "$nursingCharges",
+              "$EMOCharges",
+              "$bioWasteCharges",
+              "$sanitizationCharges",
+              "$overallTotalMedicinePrice",
+              "$overallTotalTestPrice",
+              "$overallDoctorVisitCharge",
+            ],
+          },
           remainingBalance: {
             $subtract: [
               "$totalAddedBalance",
@@ -329,6 +751,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
                   "$EMOCharges",
                   "$bioWasteCharges",
                   "$sanitizationCharges",
+                  "$overallTotalMedicinePrice",
+                  "$overallTotalTestPrice",
+                  "$overallDoctorVisitCharge",
                 ],
               },
             ],
@@ -337,9 +762,407 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
       },
     ]);
 
+    // const medicineDoctorTestBalanceCalculation = await IPD.aggregate([
+    //   {
+    //     $lookup: {
+    //       from: "ipdpatientbalances",
+    //       localField: "ipdPatientData",
+    //       foreignField: "ipdPatientRegId",
+    //       as: "IPDPatientBalanceData",
+    //     },
+    //   },
+    //   // {
+    //   //   $lookup: {
+    //   //     from: "ipdpatientbalances",
+    //   //     localField: "ipdPatientMainId",
+    //   //     foreignField: "ipdPatientRegId",
+    //   //     as: "IPDPatientBalanceData",
+    //   //   },
+    //   // },
+    //   {
+    //     $unwind: {
+    //       path: "$IPDPatientBalanceData",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   { $unwind: { path: "$medicine", preserveNullAndEmptyArrays: true } },
+    //   { $unwind: { path: "$test", preserveNullAndEmptyArrays: true } },
+    //   {
+    //     $lookup: {
+    //       from: "doctors",
+    //       localField: "doctorId",
+    //       foreignField: "_id",
+    //       as: "doctorData",
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "doctors",
+    //       localField: "ReferedDoctorId",
+    //       foreignField: "_id",
+    //       as: "ReferedDoctor",
+    //     },
+    //   },
+
+    //   { $unwind: { path: "$doctorData", preserveNullAndEmptyArrays: true } },
+    //   { $unwind: { path: "$ReferedDoctor", preserveNullAndEmptyArrays: true } },
+    //   {
+    //     $lookup: {
+    //       from: "doctorprofessionaldetails",
+    //       localField: "doctorData.doctorId",
+    //       foreignField: "doctorId",
+    //       as: "doctorFeesDatails",
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "doctorprofessionaldetails",
+    //       localField: "ReferedDoctor.doctorId",
+    //       foreignField: "doctorId",
+    //       as: "RefereddoctorFeesDatails",
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       DailyMedicinePriceTotal: { $sum: "$medicine.Price" },
+    //       DailyTestPriceTotal: { $sum: "$test.Price" },
+    //       visitDate: { $first: "$VisitDateTime" },
+    //       IPDPatientRegId: { $first: "$IPDPatientBalanceData.ipdPatientRegId" },
+    //       // doctorData: { $first: "$doctorData" },
+    //       // referedDoctorData: { $first: "$ReferedDoctor" },
+    //       doctorFeesDatails: { $first: "$doctorFeesDatails.doctorFee" },
+    //       RefereddoctorFeesDatails: {
+    //         $first: "$RefereddoctorFeesDatails.doctorFee",
+    //       },
+    //       // doctorVisitTotalCharge:{$sum:{$cond:if:{"ReferedDoctor":}}},
+    //       // $sum: { $cond: { if: { "status": "present" }, then: 1, else: 0}}
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: null,
+    //       overAllData: { $push: "$$ROOT" },
+    //       ipdPatientRegId: { $first: "$IPDPatientRegId" },
+    //       overallTotalMedicinePrice: { $sum: "$DailyMedicinePriceTotal" },
+    //       overallTotalTestPrice: { $sum: "$DailyTestPriceTotal" },
+    //       overallDoctorVisitCharge: {
+    //         $sum: {
+    //           $cond: {
+    //             if: { $ne: ["$RefereddoctorFeesDatails", []] }, // Checks if RefereddoctorFeesDatails is not an empty array
+    //             then: { $arrayElemAt: ["$RefereddoctorFeesDatails", 0] }, // Use the fee from RefereddoctorFeesDatails if present
+    //             else: { $arrayElemAt: ["$doctorFeesDatails", 0] }, // Otherwise, use the fee from doctorFeesDatails
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       _id: 0,
+    //       ipdPatientRegId: 1,
+    //       overAllData: 1,
+    //       overallTotalMedicinePrice: 1,
+    //       overallTotalTestPrice: 1,
+    //       overallDoctorVisitCharge: 1,
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "ipdpatientbalances",
+    //       localField: "ipdPatientRegId",
+    //       foreignField: "ipdPatientRegId",
+    //       as: "IPDPatientBalanceData",
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$IPDPatientBalanceData",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$IPDPatientBalanceData._id",
+    //       balanceID: { $first: "$IPDPatientBalanceData.balanceID" },
+    //       uhid: { $first: "$IPDPatientBalanceData.uhid" },
+    //       ipdPatientRegId: { $first: "$IPDPatientBalanceData.ipdPatientRegId" },
+    //       // totalBalance: { $sum: "$balance.totalBalance" },
+    //       balance: { $first: "$IPDPatientBalanceData.balance" },
+    //       // totalAddedBalance: { $first: "$balance.addedBalance" },
+    //       charges: { $first: "$IPDPatientBalanceData.charges" },
+    //       labTestCharges: { $first: "$IPDPatientBalanceData.labTestCharges" },
+    //       overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+    //       overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+    //       overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+    //     },
+    //   },
+    //   { $unwind: { path: "$balance", preserveNullAndEmptyArrays: true } },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       // totalBalance: { $sum: "$balance.totalBalance" },
+    //       totalAddedBalance: { $sum: "$balance.addedBalance" },
+    //       charges: { $first: "$charges" },
+    //       labTestCharges: { $first: "$labTestCharges" },
+    //       overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+    //       overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+    //       overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$charges",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$charges.items",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+    //       overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+    //       overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       labTestCharges: { $first: "$labTestCharges" },
+    //       // totalBalance: { $first: "$totalBalance" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: {
+    //         $sum: {
+    //           $multiply: ["$charges.items.quantity", "$charges.items.price"],
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$labTestCharges",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $unwind: {
+    //       path: "$labTestCharges.items",
+    //       preserveNullAndEmptyArrays: true,
+    //     },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       // labTestCharges: { $first: "$labTestCharges" },
+    //       // totalBalance: { $first: "$totalBalance" },
+    //       overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+    //       overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+    //       overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: { $first: "$totalCharges" },
+    //       totalLabTestCharges: {
+    //         $sum: {
+    //           $multiply: [
+    //             "$labTestCharges.items.quantity",
+    //             "$labTestCharges.items.price",
+    //           ],
+    //         },
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "ipdpatients",
+    //       localField: "ipdPatientRegId", // Adjust this field as needed
+    //       foreignField: "mainId", // Adjust this field as needed
+    //       as: "IPDPatientData",
+    //     },
+    //   },
+    //   {
+    //     $unwind: { path: "$IPDPatientData", preserveNullAndEmptyArrays: true },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientObjectId: { $first: "$_id" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: { $first: "$totalCharges" },
+    //       totalLabTestCharges: { $first: "$totalLabTestCharges" },
+    //       overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+    //       overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+    //       overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+    //       labTestCharges: { $first: "$labTestCharges" },
+    //       creationDate: { $first: "$IPDPatientData.createdAt" },
+    //       bedId: { $first: "$IPDPatientData.ipdBedNo" },
+    //       ipdPatientDischarged: {
+    //         $first: "$IPDPatientData.ipdPatientDischarged",
+    //       },
+    //     },
+    //   },
+
+    //   {
+    //     $lookup: {
+    //       from: "managebeds",
+    //       localField: "bedId", // Adjust this field as needed
+    //       foreignField: "bedId", // Adjust this field as needed
+    //       as: "BedData",
+    //     },
+    //   },
+    //   {
+    //     $unwind: { path: "$BedData", preserveNullAndEmptyArrays: true },
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$_id",
+    //       balanceID: { $first: "$balanceID" },
+    //       uhid: { $first: "$uhid" },
+    //       ipdPatientObjectId: { $first: "$_id" },
+    //       ipdPatientRegId: { $first: "$ipdPatientRegId" },
+    //       totalAddedBalance: { $first: "$totalAddedBalance" },
+    //       totalCharges: { $first: "$totalCharges" },
+    //       totalLabTestCharges: { $first: "$totalLabTestCharges" },
+    //       overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+    //       overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+    //       overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+    //       creationDate: { $first: "$creationDate" },
+    //       beddata: { $first: "$BedData" },
+    //       ipdPatientDischarged: {
+    //         $first: "$ipdPatientDischarged",
+    //       },
+    //     },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "ipdpatientdischargereciepts",
+    //       localField: "ipdPatientRegId", // Adjust this field as needed
+    //       foreignField: "IPDPatientRegId", // Adjust this field as needed
+    //       as: "dischargeData",
+    //     },
+    //   },
+    //   {
+    //     $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
+    //   },
+
+    //   // {
+    //   //   $addFields: {
+    //   //     days: {
+    //   //       $cond: {
+    //   //         if: { $eq: ["$ipdPatientDischarged", true] },
+    //   //         then: {
+    //   //           // days: "$dischargeData.dateAndTimeOfDischarge",
+    //   //           $dateDiff: {
+    //   //             startDate: "$creationDate",
+    //   //             endDate: "$dischargeData.dateAndTimeOfDischarge",
+    //   //             unit: "day",
+    //   //           },
+    //   //         },
+    //   //         else: {
+    //   //           $dateDiff: {
+    //   //             startDate: "$creationDate",
+    //   //             endDate: "$$NOW",
+    //   //             unit: "day",
+    //   //           },
+    //   //         },
+    //   //       },
+    //   //     },
+    //   //   },
+    //   // },
+    //   // {
+    //   //   $project: {
+    //   //     balanceID: 1,
+    //   //     uhid: 1,
+    //   //     ipdPatientObjectId: 1,
+    //   //     ipdPatientRegId: 1,
+    //   //     totalAddedBalance: 1,
+    //   //     totalCharges: 1,
+    //   //     totalLabTestCharges: 1,
+    //   //     overallTotalMedicinePrice: 1,
+    //   //     overallTotalTestPrice: 1,
+    //   //     overallDoctorVisitCharge: 1,
+    //   //     creationDate: 1,
+    //   //     // beddata: 1,
+    //   //     days: 1,
+    //   //     bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
+    //   //     nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
+    //   //     EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
+    //   //     bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+    //   //     sanitizationCharges: {
+    //   //       $multiply: ["$days", "$beddata.sanitizationCharges"],
+    //   //     },
+    //   //   },
+    //   // },
+    //   // {
+    //   //   $addFields: {
+    //   //     autoChargesTotal: {
+    //   //       $add: [
+    //   //         "$bedCharges",
+    //   //         "$nursingCharges",
+    //   //         "$EMOCharges",
+    //   //         "$bioWasteCharges",
+    //   //         "$sanitizationCharges",
+    //   //       ],
+    //   //     },
+    //   //     finalTotal: {
+    //   //       $add: [
+    //   //         "$totalCharges",
+    //   //         "$totalLabTestCharges",
+    //   //         "$bedCharges",
+    //   //         "$nursingCharges",
+    //   //         "$EMOCharges",
+    //   //         "$bioWasteCharges",
+    //   //         "$sanitizationCharges",
+    //   //         "$overallTotalMedicinePrice",
+    //   //         "$overallTotalTestPrice",
+    //   //         "$overallDoctorVisitCharge",
+    //   //       ],
+    //   //     },
+    //   //     remainingBalance: {
+    //   //       $subtract: [
+    //   //         "$totalAddedBalance",
+    //   //         {
+    //   //           $add: [
+    //   //             "$totalCharges",
+    //   //             "$totalLabTestCharges",
+    //   //             "$bedCharges",
+    //   //             "$nursingCharges",
+    //   //             "$EMOCharges",
+    //   //             "$bioWasteCharges",
+    //   //             "$sanitizationCharges",
+    //   //             "$overallTotalMedicinePrice",
+    //   //             "$overallTotalTestPrice",
+    //   //             "$overallDoctorVisitCharge",
+    //   //           ],
+    //   //         },
+    //   //       ],
+    //   //     },
+    //   //   },
+    //   // },
+    // ]);
+
+    // console.log(fsdfd);
+
     return res.status(200).json({
-      data: allBalances,
-      balanceCalculation: balanceCalculation,
+      // data: allBalances,
+      balanceCalculation: remainingBalanceCalc,
+      // medicineDoctorTestBalanceCalculation:
+      //   medicineDoctorTestBalanceCalculation,
+      // mainRemainingBalance:
+      //   balanceCalculation.remainingBalance -
+      //   (medicineDoctorTestBalanceCalculation.overallTotalMedicinePrice +
+      //     medicineDoctorTestBalanceCalculation.overallTotalMedicinePrice +
+      //     medicineDoctorTestBalanceCalculation.overallTotalMedicinePrice),
     });
   } catch (error) {
     res.status(500).json("Internal Server Error");
@@ -353,7 +1176,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
       ipdPatientRegId: id,
     });
 
-    const IPDPatient = await IPDPatientModel.findOne({ mainId: id });
+    // const IPDPatient = await IPDPatientModel.findOne({ mainId: id });
 
     if (!IPDPatientBalance) {
       return res.status(404).json("IPD Patient Balance Data Not Found");
@@ -435,92 +1258,178 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           console.log(err);
         });
 
-      const totalTime = (time) => {
-        let pastDate = new Date(time);
-        let presentDate = new Date();
+      const autoChargeCalculation = await IPDPatientModel.aggregate([
+        {
+          $match: { mainId: IPDPatientBalance.ipdPatientRegId },
+        },
+        {
+          $lookup: {
+            from: "managebeds",
+            localField: "ipdBedNo", // Adjust this field as needed
+            foreignField: "bedId", // Adjust this field as needed
+            as: "bedData",
+          },
+        },
+        {
+          $unwind: { path: "$bedData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $lookup: {
+            from: "ipdpatientdischargereciepts",
+            localField: "mainId", // Adjust this field as needed
+            foreignField: "IPDPatientRegId", // Adjust this field as needed
+            as: "dischargeData",
+          },
+        },
+        {
+          $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            days: {
+              $cond: {
+                if: { $eq: ["$ipdPatientDischarged", true] },
+                then: {
+                  // days: "$dischargeData.dateAndTimeOfDischarge",
+                  $dateDiff: {
+                    startDate: "$createdAt",
+                    endDate: "$dischargeData.dateAndTimeOfDischarge",
+                    unit: "day",
+                  },
+                },
+                else: {
+                  $dateDiff: {
+                    startDate: "$createdAt",
+                    endDate: "$$NOW",
+                    unit: "day",
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            bedData: 1,
+            // beddata: 1,
+            days: { $add: ["$days", 1] },
+            // bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
+            // nursingTotalCharges: {
+            //   $multiply: ["$days", "$bedData.nursingCharges"],
+            // },
+            // EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+            // bioWasteTotalCharges: {
+            //   $multiply: ["$days", "$bedData.bioWasteCharges"],
+            // },
+            // sanitizationTotalCharges: {
+            //   $multiply: ["$days", "$bedData.sanitizationCharges"],
+            // },
+          },
+        },
+        {
+          $project: {
+            bedData: 1,
+            // beddata: 1,
+            days: 1,
+            bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
+            nursingTotalCharges: {
+              $multiply: ["$days", "$bedData.nursingCharges"],
+            },
+            EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+            bioWasteTotalCharges: {
+              $multiply: ["$days", "$bedData.bioWasteCharges"],
+            },
+            sanitizationTotalCharges: {
+              $multiply: ["$days", "$bedData.sanitizationCharges"],
+            },
+          },
+        },
+      ]);
 
-        let differenceInTime = presentDate.getTime() - pastDate.getTime();
+      // console.log(autoChargeCalculation);
 
-        let differenceInDays = Math.round(
-          differenceInTime / (1000 * 3600 * 24)
-        );
+      // const totalTimeCalculation = (time) => {
+      //   let pastDate = new Date(time);
+      //   let presentDate = new Date();
 
-        return differenceInDays + 1;
-      };
+      //   let differenceInTime = presentDate.getTime() - pastDate.getTime();
 
-      const totalCharges = (creationTime, charges) => {
-        let time = totalTime(creationTime);
+      //   let differenceInDays = Math.round(
+      //     differenceInTime / (1000 * 3600 * 24)
+      //   );
 
-        let totalCharge = time * charges;
+      //   return differenceInDays + 1;
+      // };
 
-        return totalCharge;
-      };
+      // const totalChargesCalculation = (creationTime, charges) => {
+      //   let time = totalTimeCalculation(creationTime);
 
-      const ManageBedsPriceData = await ManageBedsModel.findOne({
-        bedId: IPDPatient.ipdBedNo,
+      //   let totalCharge = time * charges;
+
+      //   return totalCharge;
+      // };
+
+      // const ManageBedsPriceData = await ManageBedsModel.findOne({
+      //   bedId: IPDPatient.ipdBedNo,
+      // });
+
+      // if (!ManageBedsPriceData) {
+      //   return res.status(404).json("IPD Patient Bed Not Found!");
+      // }
+
+      // if (ManageBedsPriceData) {
+      //   const ipdPatientAutoCharges = {
+      //     numberOfDays: totalTimeCalculation(IPDPatient.createdAt),
+      //     totalbedCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.bedCharges
+      //     ),
+      //     totalNurseCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.nursingCharges
+      //     ),
+      //     totalEMOCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.EMOCharges
+      //     ),
+      //     totalBioWasteCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.bioWasteCharges
+      //     ),
+      //     totalSanitizationCharges: totalChargesCalculation(
+      //       IPDPatient.createdAt,
+      //       ManageBedsPriceData.sanitizationCharges
+      //     ),
+      //     subTotal:
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.bedCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.nursingCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.EMOCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.bioWasteCharges
+      //       ) +
+      //       totalChargesCalculation(
+      //         IPDPatient.createdAt,
+      //         ManageBedsPriceData.sanitizationCharges
+      //       ),
+      //   };
+
+      return res.status(200).json({
+        data: IPDPatientBalance,
+        totalMedicalCharges: totalMedicalCharges,
+        totalLabTestCharges: totalLabTestCharges,
+        autoCharges: autoChargeCalculation,
       });
-
-      if (!ManageBedsPriceData) {
-        return res.status(404).json("IPD Patient Bed Not Found!");
-      }
-
-      if (ManageBedsPriceData) {
-        const ipdPatientAutoCharges = {
-          numberOfDays: totalTime(IPDPatient.createdAt),
-          totalbedCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.bedCharges
-          ),
-          totalNurseCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.nursingCharges
-          ),
-          totalEMOCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.EMOCharges
-          ),
-          totalBioWasteCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.bioWasteCharges
-          ),
-          totalSanitizationCharges: totalCharges(
-            IPDPatient.createdAt,
-            ManageBedsPriceData.sanitizationCharges
-          ),
-          subTotal:
-            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.bedCharges) +
-            totalCharges(
-              IPDPatient.createdAt,
-              ManageBedsPriceData.nursingCharges
-            ) +
-            totalCharges(IPDPatient.createdAt, ManageBedsPriceData.EMOCharges) +
-            totalCharges(
-              IPDPatient.createdAt,
-              ManageBedsPriceData.bioWasteCharges
-            ) +
-            totalCharges(
-              IPDPatient.createdAt,
-              ManageBedsPriceData.sanitizationCharges
-            ),
-        };
-
-        return res.status(200).json({
-          data: IPDPatientBalance,
-          totalMedicalCharges: totalMedicalCharges,
-          totalLabTestCharges: totalLabTestCharges,
-          autoCharges: ipdPatientAutoCharges,
-          total:
-            totalMedicalCharges +
-            totalLabTestCharges +
-            ipdPatientAutoCharges?.subTotal,
-          remainingBalance:
-            IPDPatientBalance?.balance[IPDPatientBalance?.balance?.length - 1]
-              .totalBalance -
-            (totalMedicalCharges +
-              totalLabTestCharges +
-              ipdPatientAutoCharges?.subTotal),
-        });
-      }
+      // }
     }
   } catch (error) {
     res.status(500).json("Internal Server Error");
