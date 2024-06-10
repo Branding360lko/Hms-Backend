@@ -290,9 +290,9 @@ Router.put("/IPDPatientDischargeRequest-PUT/:id", async (req, res) => {
 });
 
 Router.put(
-  "/IPDPatientDischarge-NurseDischargeDetails-PUT/:IpdPatientRegID",
+  "/IPDPatientDischarge-NurseDischargeDetails-PUT/:Id",
   async (req, res) => {
-    const id = req.params.IpdPatientRegID;
+    const idPatientId = req.params.Id;
 
     const {
       nurseId,
@@ -310,10 +310,10 @@ Router.put(
       implantDetails,
     } = req.body;
     try {
-      const updatedNurseDischargeDetails =
+      const updatedNurseDischargeDetailsUpdated =
         await IPDNurseDischargeDetailsModel.findOneAndUpdate(
           {
-            IpdPatientRegID: id,
+            ipdPatientRegId: idPatientId,
           },
           {
             nurseId: nurseId ? nurseId : IPDNurseDischargeDetailsModel.nurseId,
@@ -348,14 +348,16 @@ Router.put(
           }
         );
 
-      if (!updatedNurseDischargeDetails) {
+      if (!updatedNurseDischargeDetailsUpdated) {
         return res.status(404).json("IPD Patient Discharge Details Not Found");
       }
 
-      if (updatedNurseDischargeDetails) {
-        const updateIPDPatient = await IPDPatientModel.findOneAndUpdate(
+      // console.log(updatedNurseDischargeDetailsUpdated);
+
+      if (updatedNurseDischargeDetailsUpdated) {
+        const updatedIPDPatient = await IPDPatientModel.findOneAndUpdate(
           {
-            mainId: updatedNurseDischargeDetails.ipdPatientRegId,
+            mainId: updatedNurseDischargeDetailsUpdated.ipdPatientRegId,
           },
           {
             // ipdPatientNurseRequestForDischarge: true,
@@ -363,7 +365,7 @@ Router.put(
           }
         );
 
-        if (updateIPDPatient) {
+        if (updatedIPDPatient) {
           return res.status(200).json({
             message: "IPD Patient Nurse Discharge Details has been updated",
           });
@@ -394,7 +396,7 @@ Router.put(
     try {
       const updatedIPDDoctorDischargeDetails =
         await IPDDoctorDischargeDetailsModel.findOneAndUpdate(
-          { IpdPatientRegID: id },
+          { ipdPatientRegId: id },
           {
             doctorId: doctorId
               ? doctorId
