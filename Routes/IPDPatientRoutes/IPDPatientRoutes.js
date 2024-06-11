@@ -1447,7 +1447,7 @@ Router.post("/IPDPatient-POST", async (req, res) => {
     ipdPaymentMode,
     // ipdWardNo,
     ipdFloorNo,
-
+    balanceNote,
     // ipdRoomNo,
     ipdBedNo,
   } = req.body;
@@ -1483,6 +1483,7 @@ Router.post("/IPDPatient-POST", async (req, res) => {
           totalBalance: newIpdPatientData.ipdDepositAmount,
           addedBalance: newIpdPatientData.ipdDepositAmount,
           paymentMethod: ipdPaymentMode,
+          balanceNote: balanceNote,
         },
       });
 
@@ -1568,7 +1569,7 @@ Router.put("/IPDPatient-PUT/:Id", async (req, res) => {
 Router.put("/IPDPatient-PUT-UpdateDepositAmount/:ID", async (req, res) => {
   const id = req.params.ID;
 
-  const { ipdAddedAmount, ipdPaymentMode } = req.body;
+  const { ipdAddedAmount, ipdPaymentMode, balanceNote } = req.body;
   try {
     const patient = await IPDPatientModel.findOne({ mainId: id });
 
@@ -1600,6 +1601,7 @@ Router.put("/IPDPatient-PUT-UpdateDepositAmount/:ID", async (req, res) => {
                 totalBalance: ipdPatientData.ipdDepositAmount + ipdAddedAmount,
                 addedBalance: ipdAddedAmount,
                 paymentMethod: ipdPaymentMode,
+                balanceNote: balanceNote,
               },
             },
           }

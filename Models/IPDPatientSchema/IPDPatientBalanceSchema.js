@@ -9,6 +9,7 @@ const balanceSubSchema = new Schema(
     totalBalance: Number,
     addedBalance: Number,
     paymentMethod: String,
+    balanceNote: String,
   },
   { timestamps: true }
 );

@@ -79,7 +79,7 @@ Router.post("/OPDPatient-POST", async (req, res) => {
     opdPatientBloodPressure,
     opdPatientStandardCharges,
     opdPatientPaymentMode,
-    opdDoctorVisitDate,
+    // opdDoctorVisitDate,
     opdPatientNotes,
   } = req.body;
   try {
@@ -98,7 +98,7 @@ Router.post("/OPDPatient-POST", async (req, res) => {
       opdPatientBloodPressure: opdPatientBloodPressure,
       opdPatientStandardCharges: opdPatientStandardCharges,
       opdPatientPaymentMode: opdPatientPaymentMode,
-      opdDoctorVisitDate: opdDoctorVisitDate,
+      opdDoctorVisitDate: new Date().toLocaleString(),
       opdPatientNotes: opdPatientNotes,
     });
 
@@ -124,7 +124,7 @@ Router.put("/OPDPatient-PUT/:Id", async (req, res) => {
     opdPatientBloodPressure,
     opdPatientStandardCharges,
     opdPatientPaymentMode,
-    opdDoctorVisitDate,
+    // opdDoctorVisitDate,
     opdPatientNotes,
   } = req.body;
   try {
@@ -146,9 +146,9 @@ Router.put("/OPDPatient-PUT/:Id", async (req, res) => {
         opdPatientPaymentMode: opdPatientPaymentMode
           ? opdPatientPaymentMode
           : OPDPatientModel.opdPatientPaymentMode,
-        opdDoctorVisitDate: opdDoctorVisitDate
-          ? opdDoctorVisitDate
-          : OPDPatientModel.opdDoctorVisitDate,
+        // opdDoctorVisitDate: opdDoctorVisitDate
+        //   ? opdDoctorVisitDate
+        //   : OPDPatientModel.opdDoctorVisitDate,
         opdPatientNotes: opdPatientNotes
           ? opdPatientNotes
           : OPDPatientModel.opdPatientNotes,
