@@ -26,7 +26,7 @@ const EmergencyPatientSchema = new Schema(
     },
     notes: {
       type: String,
-      required: true,
+      // required: true,
     },
     isDeleted: {
       type: Boolean,

@@ -4,6 +4,8 @@ const Router = express.Router();
 
 const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
 
+const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
+
 const generateUniqueId = () => {
   const date = new Date();
   const year = date.getFullYear().toString();
@@ -50,21 +52,35 @@ Router.post("/EmergencyPatient-POST", async (req, res) => {
     if (!bedId) {
       return res.status(422).json("Please select the available bed!");
     }
-    const newEmergencyPatient = new EmergencyPatientModel({
-      mainId: "EM" + generateUniqueId(),
-      patientId: patientId,
-      doctorId: doctorId,
-      bedId: bedId,
-      admittingDateTime: admittingDateTime,
-      notes: notes,
-    });
 
-    return await newEmergencyPatient.save().then((data) =>
-      res.status(200).json({
-        message: "Emergency Patient Created Successfully!",
-        data: data,
-      })
-    );
+    if (bedId) {
+      const newEmergencyPatient = new EmergencyPatientModel({
+        mainId: "EM" + generateUniqueId(),
+        patientId: patientId,
+        doctorId: doctorId,
+        bedId: bedId,
+        admittingDateTime: admittingDateTime,
+        notes: notes,
+      });
+
+      if (newEmergencyPatient) {
+        const bedStatusUpdate = await ManageBedsModel.findOneAndUpdate(
+          { bedId: bedId },
+          {
+            bedAvailableOrNot: false,
+          }
+        );
+
+        if (bedStatusUpdate) {
+          return await newEmergencyPatient.save().then((data) =>
+            res.status(200).json({
+              message: "Emergency Patient Created Successfully!",
+              data: data,
+            })
+          );
+        }
+      }
+    }
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }
@@ -94,12 +110,10 @@ Router.put("/EmergencyPatient-PUT/:ID", async (req, res) => {
       return res.status(404).json("Emergency Patient not found");
     }
 
-    return res
-      .status(200)
-      .json({
-        message: "Emergency Patient Updated successfully",
-        data: emergencyPatientUpdatedData,
-      });
+    return res.status(200).json({
+      message: "Emergency Patient Updated successfully",
+      data: emergencyPatientUpdatedData,
+    });
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }

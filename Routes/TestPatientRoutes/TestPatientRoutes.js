@@ -22,7 +22,7 @@ const generateUniqueId = () => {
   return uniqueId;
 };
 
-Router.get("/TestPatient-GET-ALL", async (req, res) => {
+Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
   try {
     const testPatients = await TestPatientModel.find();
     return res.status(200).json(testPatients);
@@ -31,7 +31,7 @@ Router.get("/TestPatient-GET-ALL", async (req, res) => {
   }
 });
 
-Router.get("/TestPatient-GET-ONE/:ID", async (req, res) => {
+Router.get("/TestOfPatient-GET-ONE/:ID", async (req, res) => {
   const id = req.params.ID;
   try {
     const testPatient = await TestPatientModel.findOne({ mainId: id });
@@ -48,32 +48,41 @@ Router.get("/TestPatient-GET-ONE/:ID", async (req, res) => {
   }
 });
 
-Router.post("/TestPatient-POST", async (req, res) => {
-  const { prescribedByDoctor, test, patientType } = req.body;
+Router.post("/TestOfPatient-POST", async (req, res) => {
+  const { testPatientId, prescribedByDoctor, test, patientType } = req.body;
   try {
     const newTestPatient = new TestPatientModel({
-      testPatientId: "TP-" + generateUniqueId(),
+      mainId: "TP-" + generateUniqueId(),
+      testPatientId: testPatientId,
       prescribedByDoctor: prescribedByDoctor,
       test: test,
       patientType: patientType,
     });
 
-    return await newTestPatient.save().then((res) => {
-      return res.status(200).json("Test Patient Created Successfully!");
+    // console.log(newTestPatient);
+
+    return await newTestPatient.save().then((data) => {
+      return res.status(200).json({
+        message: "Test Of Patient Created Successfully!",
+        data: data,
+      });
     });
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }
 });
 
-Router.put("/TestPatient-PUT/:ID", async (req, res) => {
+Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
   const id = req.params.ID;
-  const { prescribedByDoctor, test, patientType } = req.body;
+  const { testPatientId, prescribedByDoctor, test, patientType } = req.body;
 
   try {
     const updatedTestPatient = await TestPatientModel.findOneAndUpdate(
       { mainId: id },
       {
+        testPatientId: testPatientId
+          ? testPatientId
+          : TestPatientModel.testPatientId,
         prescribedByDoctor: prescribedByDoctor
           ? prescribedByDoctor
           : TestPatientModel.prescribedByDoctor,
@@ -94,7 +103,7 @@ Router.put("/TestPatient-PUT/:ID", async (req, res) => {
   }
 });
 
-Router.delete("/TestPatient-DELETE/:Id", async (req, res) => {
+Router.delete("/TestOfPatient-DELETE/:Id", async (req, res) => {
   const id = req.params.Id;
 
   try {
