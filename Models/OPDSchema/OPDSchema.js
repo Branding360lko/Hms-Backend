@@ -21,6 +21,9 @@ const OPDSchema = new Schema(
     Note: {
       type: String,
     },
+    NextAppoiment: {
+      type: String,
+    },
     OpdPatientData: {
       type: Schema.Types.ObjectId,
       ref: "OPDPatient",

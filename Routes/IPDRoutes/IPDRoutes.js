@@ -218,6 +218,7 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
           patientsData: 1,
           doctorData: 1,
           ReferedDoctor: 1,
+          submittedBy: 1,
         },
       },
     ]);

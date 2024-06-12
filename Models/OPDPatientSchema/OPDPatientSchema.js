@@ -37,7 +37,7 @@ const OPDPatientSchema = new Schema(
       // required: true,
     },
     opdDoctorVisitDate: {
-      type: String,
+      type: Date,
     },
     opdPatientNotes: {
       type: String,

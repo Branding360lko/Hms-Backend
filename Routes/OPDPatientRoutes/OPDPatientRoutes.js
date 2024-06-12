@@ -98,7 +98,7 @@ Router.post("/OPDPatient-POST", async (req, res) => {
       opdPatientBloodPressure: opdPatientBloodPressure,
       opdPatientStandardCharges: opdPatientStandardCharges,
       opdPatientPaymentMode: opdPatientPaymentMode,
-      opdDoctorVisitDate: new Date().toLocaleString(),
+      opdDoctorVisitDate: new Date(),
       opdPatientNotes: opdPatientNotes,
     });
 
