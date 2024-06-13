@@ -39,10 +39,16 @@ Router.get("/OPD-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-Router.get("/Opd-get-dat-with-doctor");
 Router.post("/OPD-Create", upload.none(), async (req, res) => {
-  const { medicine, test, Symptoms, Note, OpdPatientData, isPatientsChecked } =
-    req.body;
+  const {
+    medicine,
+    test,
+    Symptoms,
+    Note,
+    OpdPatientData,
+    isPatientsChecked,
+    NextAppoiment,
+  } = req.body;
   console.log(
     medicine,
     test,
@@ -59,6 +65,7 @@ Router.post("/OPD-Create", upload.none(), async (req, res) => {
       test,
       OpdPatientData,
       isPatientsChecked,
+      NextAppoiment,
     });
     const opdData = await OPD.findById(opd?._id);
 
@@ -131,6 +138,7 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
           "testData._id": 1,
           OpdPatientData: 1,
           patientsData: 1,
+          NextAppoiment: 1,
         },
       },
     ]);
@@ -149,7 +157,8 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
 });
 Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
-  const { Symptoms, Note, test, medicine, isPatientsChecked } = req.body;
+  const { Symptoms, Note, test, medicine, isPatientsChecked, NextAppoiment } =
+    req.body;
   console.log(Symptoms, Note, test, medicine);
   try {
     const opdData = await OPD.findByIdAndUpdate(
@@ -159,6 +168,7 @@ Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
         Symptoms,
         Note,
         test,
+        NextAppoiment,
       },
       {
         new: true,

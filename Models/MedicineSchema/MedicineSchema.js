@@ -19,7 +19,7 @@ const MedicineSchema = new Schema(
     BATCH: {
       type: String,
     },
-    ExpiryDate: {
+    EXPIRY: {
       type: String,
     },
     QTY: {
@@ -30,7 +30,7 @@ const MedicineSchema = new Schema(
       type: Number,
       required: true,
     },
-    Price: {
+    RATE: {
       type: Number,
       required: true,
     },

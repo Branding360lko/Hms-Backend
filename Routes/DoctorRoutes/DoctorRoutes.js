@@ -145,6 +145,7 @@ router.get("/get-each-doctor-with-patients", async (req, res) => {
           IpdPatientCreatedTime: "$doctorAsignWithPatients.updatedAt",
           IpdPatientMainId: "$doctorAsignWithPatients.mainId",
           IpdPatientNurseId: "$doctorAsignWithPatients.ipdNurseId",
+          IpdPatientDischarge: "$doctorAsignWithPatients.ipdPatientDischarged",
         },
       },
     ]);

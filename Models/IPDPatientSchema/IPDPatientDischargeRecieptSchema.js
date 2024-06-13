@@ -8,37 +8,28 @@ const IPDPatientDischargeRecieptSchema = new Schema(
       type: String,
       required: true,
     },
-    uhid: {
+    IPDPatientRegId: {
       type: String,
-      required: true,
+      // required: true,
     },
-    numberOfDays: {
-      type: Number,
-      required: true,
+    patientUHID: {
+      type: String,
     },
-    totalbedCharges: {
-      type: Number,
-      required: true,
+    BHT: {
+      type: String,
+      // required: true,
     },
-    totalNurseCharges: {
-      type: Number,
-      required: true,
+    surgery: {
+      type: String,
     },
-    totalEMOCharges: {
-      type: Number,
-      required: true,
+    bedId: {
+      type: String,
     },
-    totalBioWasteCharges: {
-      type: Number,
-      required: true,
+    dateAndTimeOfDischarge: {
+      type: Date,
     },
-    totalSanitizationCharges: {
-      type: Number,
-      required: true,
-    },
-    subTotal: {
-      type: Number,
-      required: true,
+    result: {
+      type: String,
     },
   },
   { timestamps: true }

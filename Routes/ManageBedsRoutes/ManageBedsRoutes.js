@@ -44,16 +44,32 @@ Router.get("/ManageBeds-GET-ONE/:bedId", async (req, res) => {
 });
 
 Router.post("/ManageBeds-POST", async (req, res) => {
-  const { bedNumber, bedTypeName, bedFloor, isAppointmentApplicable } =
-    req.body;
+  const {
+    bedNumber,
+    bedType,
+    bedSubType,
+    bedFloor,
+    bedCharges,
+    nursingCharges,
+    EMOCharges,
+    bioWasteCharges,
+    sanitizationCharges,
+    bedAvailableOrNot,
+  } = req.body;
 
   try {
     const newBed = new ManageBedsModel({
-      bedId: "BED" + generateUniqueId(),
+      bedId: "bed" + generateUniqueId(),
       bedNumber: bedNumber,
-      bedTypeName: bedTypeName,
+      bedType: bedType,
+      bedSubType: bedSubType,
       bedFloor: bedFloor,
-      isAppointmentApplicable: isAppointmentApplicable,
+      bedCharges: bedCharges,
+      nursingCharges: nursingCharges,
+      EMOCharges: EMOCharges,
+      bioWasteCharges: bioWasteCharges,
+      sanitizationCharges: sanitizationCharges,
+      bedAvailableOrNot: bedAvailableOrNot,
     });
 
     return newBed.save().then((data) =>
@@ -67,30 +83,74 @@ Router.post("/ManageBeds-POST", async (req, res) => {
   }
 });
 
-Router.put(
-  "/ManageBeds-PUT-IsAppointmentApplicable/:bedId",
-  async (req, res) => {
-    const ID = req.params.bedId;
+Router.put("/ManageBeds-PUT/:BedId", async (req, res) => {
+  const {
+    bedNumber,
+    bedType,
+    bedSubType,
+    bedFloor,
+    bedCharges,
+    nursingCharges,
+    EMOCharges,
+    bioWasteCharges,
+    sanitizationCharges,
+    bedAvailableOrNot,
+  } = req.body;
 
-    const { isAppointmentApplicable } = req.body;
-    try {
-      const department = await ManageBedsModel.findOneAndUpdate(
-        { bedId: ID },
-        {
-          isAppointmentApplicable: isAppointmentApplicable,
-        }
-      );
-      if (!department) {
-        return res.status(404).json("Bed Data Not Found");
+  try {
+    const id = req.params.BedId;
+    const updatedBeds = await ManageBedsModel.findOneAndUpdate(
+      { bedId: id },
+      {
+        bedNumber: bedNumber ? bedNumber : ManageBedsModel.bedNumber,
+        bedType: bedType ? bedType : ManageBedsModel.bedType,
+        bedSubType: bedSubType ? bedSubType : ManageBedsModel.bedSubType,
+        bedFloor: bedFloor ? bedFloor : ManageBedsModel.bedFloor,
+        bedCharges: bedCharges ? bedCharges : ManageBedsModel.bedCharges,
+        nursingCharges: nursingCharges
+          ? nursingCharges
+          : ManageBedsModel.nursingCharges,
+        EMOCharges: EMOCharges ? EMOCharges : ManageBedsModel.EMOCharges,
+        bioWasteCharges: bioWasteCharges
+          ? bioWasteCharges
+          : ManageBedsModel.bioWasteCharges,
+        sanitizationCharges: sanitizationCharges
+          ? sanitizationCharges
+          : ManageBedsModel.sanitizationCharges,
+        bedAvailableOrNot: bedAvailableOrNot,
       }
-      return res
-        .status(200)
-        .json({ message: "Appointment Applicable Updated Succesfully" });
-    } catch (error) {
-      res.status(500).json("Internal Server Error");
+    );
+
+    if (!updatedBeds) {
+      return res.status(404).json("Beds Data Not Found");
     }
+    return res.status(200).json({ message: "Beds Data Updated Successfully" });
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
   }
-);
+});
+
+Router.put("/ManageBeds-PUT-IsBedAvailableOrNot/:bedId", async (req, res) => {
+  const ID = req.params.bedId;
+
+  const { bedAvailableOrNot } = req.body;
+  try {
+    const department = await ManageBedsModel.findOneAndUpdate(
+      { bedId: ID },
+      {
+        bedAvailableOrNot: bedAvailableOrNot,
+      }
+    );
+    if (!department) {
+      return res.status(404).json("Bed Data Not Found");
+    }
+    return res
+      .status(200)
+      .json({ message: "BedAvailableOrNot Updated Succesfully" });
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
 
 Router.delete("/ManageBeds-DELETE/:bedId", async (req, res) => {
   const ID = req.params.bedId;
