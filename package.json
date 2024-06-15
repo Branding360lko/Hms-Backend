@@ -4,7 +4,7 @@
   "description": "This is an hospital management system where all hostpital related task can be done through this management system.",
   "main": "index.js",
   "scripts": {
-    "server": "nodemon index.js",
+    "server": "nodemon --ignore assets/images/* index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Syed Fahad Junaid",

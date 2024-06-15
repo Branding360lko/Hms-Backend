@@ -5,7 +5,7 @@ const MedicineSchema = new Schema(
   {
     Name: {
       type: String,
-      required: true,
+      // required: true,
     },
     Description: {
       type: String,
@@ -23,16 +23,16 @@ const MedicineSchema = new Schema(
       type: String,
     },
     QTY: {
-      type: Number,
-      required: true,
+      type: String,
+      // required: true,
     },
     Mrp: {
       type: Number,
-      required: true,
+      // required: true,
     },
     RATE: {
       type: Number,
-      required: true,
+      // required: true,
     },
     Availability: {
       type: Boolean,

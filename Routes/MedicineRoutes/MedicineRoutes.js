@@ -1,7 +1,7 @@
 const express = require("express");
 
 const Router = express.Router();
-const fs = require("fs");
+const fs = require("fs").promises;
 const { readFileSync } = require("fs/promises");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
@@ -15,26 +15,8 @@ const storage = multer.diskStorage({
     cb(null, uuidv4() + "-" + Date.now() + path.extname(file.originalname));
   },
 });
-const fileFilter = (req, file, cb) => {
-  // const allowedFileTypes = ["image/jpeg", "image/jpg", "image/png",];
-  // if (allowedFileTypes.includes(file.mimetype)) {
-  //   cb(null, true);
-  // } else {
-  //   cb(null, false);
-  // }
-  if (
-    file.mimetype === "application/json" ||
-    file.mimetype ===
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-  ) {
-    cb(null, true);
-  } else {
-    cb(new Error("Unsupported file type"), false);
-  }
-};
 
-const upload = multer({ storage, fileFilter });
-// const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage });
 
 Router.get("/GET-ALL-Medicine", async (req, res) => {
   try {
@@ -50,6 +32,31 @@ Router.get("/GET-ALL-Medicine", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.post("/file-upload", upload.single("file"), async (req, res) => {
+  const file = req.file;
+  try {
+    if (!file) {
+      return res.status(403).json({ message: "No File Upload" });
+    }
+
+    const filePath = file.path;
+    const fileData = await fs.readFile(filePath);
+    const data = await JSON.parse(fileData);
+    const medicine = await Medicine.insertMany(data);
+    if (!medicine) {
+      return res.status(403).json({ message: "Failed To Save Medicine Data" });
+    }
+    return res.status(201).json({ message: "Data Saved Successfully" });
+  } catch (error) {
+    res.status(500).json("internal server error");
+  } finally {
+    try {
+      await fs.unlink(file.path);
+    } catch (unlinkError) {
+      console.error("Error deleting uploaded file:", unlinkError);
+    }
+  }
+});
 Router.post(
   "/bulk-upload-medicines",
   upload.single("file"),
@@ -59,8 +66,7 @@ Router.post(
     }
 
     try {
-      const filePath = req.file.path;
-      const fileData = fs.readFileSync(filePath);
+      const fileData = await fs.readFile(req.file.path, "utf-8");
 
       const data = JSON.parse(fileData);
 
@@ -70,7 +76,7 @@ Router.post(
           .json({ message: "Uploaded file must be a JSON array" });
       }
 
-      const chunkSize = 100000; // Adjust according to your needs
+      const chunkSize = 100000;
       for (let i = 0; i < data.length; i += chunkSize) {
         const chunk = data.slice(i, i + chunkSize);
         await Medicine.insertMany(chunk);
@@ -86,7 +92,7 @@ Router.post(
       });
     } finally {
       try {
-        await fs.unlink(req.file.path);
+        await fs.unlink(req.file.path); // Delete the file asynchronously
       } catch (unlinkError) {
         console.error("Error deleting uploaded file:", unlinkError);
       }
@@ -103,15 +109,7 @@ Router.post("/add-medicine", async (req, res) => {
     Mrp,
     RATE,
   } = req.body;
-  console.log(
-    Name,
 
-    BATCH,
-    EXPIRY,
-    QTY,
-    Mrp,
-    RATE
-  );
   try {
     if (!Name) {
       return res.status(401).json("Feilds are required");
