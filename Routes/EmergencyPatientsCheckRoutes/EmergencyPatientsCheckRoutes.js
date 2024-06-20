@@ -46,6 +46,7 @@ Router.post(
       isPatientsChecked,
       doctorId,
       VisitDateTime,
+      mainId,
     } = req.body;
 
     try {
@@ -69,6 +70,7 @@ Router.post(
         isPatientsChecked,
         doctorId,
         VisitDateTime,
+        mainId,
       });
       const emergencyData = await EmergencyPatientsCheck.findById(
         emergency?._id

@@ -52,6 +52,9 @@ const EmergencyPatientsCheckSchema = new Schema(
       require: true,
       default: false,
     },
+    mainId: {
+      type: String,
+    },
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: "doctors",

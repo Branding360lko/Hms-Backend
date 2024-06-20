@@ -194,6 +194,7 @@ router.get("/get-each-doctor-with-patients-emergency", async (req, res) => {
           EmergencyNotes: "$doctorAsignWithEmergencyPatients.notes",
           EmergencyPatientCreatedTime:
             "$doctorAsignWithEmergencyPatients.updatedAt",
+          EmergencyPatientMainId: "$doctorAsignWithEmergencyPatients.mainId",
         },
       },
     ]);
