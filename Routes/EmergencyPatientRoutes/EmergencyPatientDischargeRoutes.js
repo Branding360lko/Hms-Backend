@@ -361,3 +361,4 @@ Router.put(
     }
   }
 );
+module.exports = Router;

@@ -5,6 +5,9 @@ const cookie = require("cookie-parser");
 const OPD = require("../../Models/OPDSchema/OPDSchema");
 const multer = require("multer");
 const mongoose = require("mongoose");
+const OPDPatientModel = require("../../Models/OPDPatientSchema/OPDPatientSchema");
+const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
+const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -159,7 +162,6 @@ Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
   const { Symptoms, Note, test, medicine, isPatientsChecked, NextAppoiment } =
     req.body;
-  console.log(Symptoms, Note, test, medicine);
   try {
     const opdData = await OPD.findByIdAndUpdate(
       { _id: Id },
@@ -199,6 +201,56 @@ Router.post("/update-patient-checked/:Id", async (req, res) => {
     return res.status(201).json({ message: "Successfully Opd Value Updated" });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+Router.get("/doctor-dashboard-details/:doctorId", async (req, res) => {
+  const Id = req.params.doctorId;
+  try {
+    const opdPatientsDetails = await OPDPatientModel.countDocuments({
+      opdDoctorId: Id,
+    });
+    const ipdPatientsDetails = await IPDPatientModel.countDocuments({
+      ipdDoctorId: Id,
+      ipdPatientDischarged: false,
+    });
+    const emergencyPatientsDetails = await EmergencyPatientModel.countDocuments(
+      {
+        doctorId: Id,
+        emergencyPatientDischarged: false,
+      }
+    );
+
+    res.status(200).json({
+      ipdPatientsDetails,
+      opdPatientsDetails,
+      emergencyPatientsDetails,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("internal server error");
+  }
+});
+Router.get("/nurse-dashboard-details/:nurseId", async (req, res) => {
+  const Id = req.params.nurseId;
+  try {
+    const ipdPatientsDetails = await IPDPatientModel.countDocuments({
+      ipdNurseId: Id,
+      ipdPatientDischarged: false,
+    });
+    const emergencyPatientsDetails = await EmergencyPatientModel.countDocuments(
+      {
+        nurseId: Id,
+        emergencyPatientDischarged: false,
+      }
+    );
+
+    res.status(200).json({
+      ipdPatientsDetails,
+      emergencyPatientsDetails,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("internal server error");
   }
 });
 module.exports = Router;

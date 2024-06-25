@@ -62,7 +62,7 @@ Router.get("/ipd-patients/:DoctorId", async (req, res) => {
   const DoctorId = req.params.DoctorId;
   try {
     const ipdPatients = await IPDPatientModel.find({
-      ipdDoctorId: DoctorId,
+      $and: [{ ipdDoctorId: DoctorId }, { ipdPatientDischarged: false }],
     });
     if (!ipdPatients) {
       return res.status(403).json({ message: "No Data Found" });
