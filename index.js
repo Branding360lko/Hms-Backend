@@ -105,6 +105,11 @@ app.use(
 );
 app.use("/api/", require("./Routes/NurseRoutes/NurseRoutes"));
 app.use("/api/", require("./Routes/TestPatientRoutes/TestPatientRoutes"));
+app.use(
+  "/api/",
+  require("./Routes/EmergencyPatientRoutes/EmergencyPatientDischargeRoutes")
+);
+app.use("/api/", require("./Routes/Dashboard/Dashboard"));
 app.get("/home", (req, res) => {
   res.send("this is hms main page");
 });

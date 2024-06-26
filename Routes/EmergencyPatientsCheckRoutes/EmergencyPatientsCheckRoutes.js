@@ -3,6 +3,7 @@ const Router = express.Router();
 const EmergencyPatientsCheck = require("../../Models/EmergencyPatientsCheckSchema/EmergencyPatientsCheckSchema");
 const multer = require("multer");
 const mongoose = require("mongoose");
+const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "assets/images");
@@ -316,6 +317,9 @@ Router.get("/get-one-emergency-patients-data-total/:Id", async (req, res) => {
         },
       },
       {
+        $unwind: "$doctorFeesDatails",
+      },
+      {
         $project: {
           _id: 1,
           VisitDateTime: 1,
@@ -341,7 +345,6 @@ Router.get("/get-one-emergency-patients-data-total/:Id", async (req, res) => {
           DailyTestPriceTotal: 1,
           visitDate: 1,
           doctorFeesDatails: 1,
-          doctorVisitCharge: 1,
         },
       },
       {
@@ -350,7 +353,7 @@ Router.get("/get-one-emergency-patients-data-total/:Id", async (req, res) => {
           overAllData: { $push: "$$ROOT" },
           overallTotalMedicinePrice: { $sum: "$DailyMedicinePriceTotal" },
           overallTotalTestPrice: { $sum: "$DailyTestPriceTotal" },
-          overallDoctorVisitCharge: { $sum: "$doctorVisitCharge" },
+          overallDoctorVisitCharge: { $sum: "$doctorFeesDatails" },
         },
       },
       {
@@ -373,4 +376,26 @@ Router.get("/get-one-emergency-patients-data-total/:Id", async (req, res) => {
     res.status(500).json("internal server error");
   }
 });
+Router.get(
+  "/get-emergency-discharge-patients-request-list",
+  async (req, res) => {
+    try {
+      const EmergencyPatientDischargeList = await EmergencyPatientModel.find({
+        $and: [
+          { emergencyPatientNurseRequestForDischarge: true },
+          { emergencyPatientDoctorRequestForDischarge: true },
+        ],
+      });
+      if (!EmergencyPatientDischargeList) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      return res.status(200).json({
+        message: "Successfully Data Fetch",
+        data: EmergencyPatientDischargeList,
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
 module.exports = Router;
