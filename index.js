@@ -109,6 +109,7 @@ app.use(
   "/api/",
   require("./Routes/EmergencyPatientRoutes/EmergencyPatientDischargeRoutes")
 );
+app.use("/api/", require("./Routes/Dashboard/Dashboard"));
 app.get("/home", (req, res) => {
   res.send("this is hms main page");
 });
