@@ -77,7 +77,7 @@ Router.get("/ipd-patients/:DoctorId", async (req, res) => {
 });
 Router.get("/All-Ipd-Routes", async (req, res) => {
   try {
-    const ipdData = await IPD.find({});
+    const ipdData = await IPD.find({ discharge: false });
     if (!ipdData) {
       res.status(404).json("No Ipd Data Found");
     }
@@ -114,12 +114,12 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       medicine: medicine.map((med) => ({
         Name: med.name,
         Quantity: med.quantity,
-        Price: med.price,
+        Price: med.total,
       })),
       test: test.map((tst) => ({
         Name: tst.name,
         Quantity: tst.quantity,
-        Price: tst.price,
+        Price: tst.total,
       })),
       ipdPatientData,
       isPatientsChecked,
@@ -387,6 +387,90 @@ Router.post("/update-ipdPatient-checked/:Id", async (req, res) => {
     return res.status(201).json({ message: "Successfully Ipd Value Updated" });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+Router.get(
+  "/get-all-ipd-patients-discharge-nurse/:nurseId",
+  async (req, res) => {
+    const Id = req.params.nurseId;
+    try {
+      const ipdPatientDischargeNurse = await IPDPatientModel.find({
+        $and: [
+          { ipdNurseId: Id },
+          { ipdPatientNurseRequestForDischarge: true },
+          { ipdPatientDoctorRequestForDischarge: true },
+          { ipdPatientDischarged: false },
+        ],
+      });
+      if (!ipdPatientDischargeNurse) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      return res.status(200).json({
+        message: "Successfully Data Fetch",
+        data: ipdPatientDischargeNurse,
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
+Router.get(
+  "/get-all-ipd-patients-discharge-doctor/:doctorId",
+  async (req, res) => {
+    const Id = req.params.doctorId;
+    try {
+      const ipdPatientDischargeNurse = await IPDPatientModel.find({
+        $and: [
+          { ipdDoctorId: Id },
+          { ipdPatientNurseRequestForDischarge: true },
+          { ipdPatientDoctorRequestForDischarge: true },
+          { ipdPatientDischarged: false },
+        ],
+      });
+      if (!ipdPatientDischargeNurse) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      return res.status(200).json({
+        message: "Successfully Data Fetch",
+        data: ipdPatientDischargeNurse,
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
+Router.get("/IPDPatient-GET-ALL-Nurse/:nurseId", async (req, res) => {
+  const Id = req.params.nurseId;
+  try {
+    const ipdPatientDischargeNurse = await IPDPatientModel.find({
+      $and: [{ ipdNurseId: Id }, { ipdPatientDischarged: false }],
+    });
+    if (!ipdPatientDischargeNurse) {
+      return res.status(403).json({ message: "No Data Found" });
+    }
+    return res.status(200).json({
+      message: "Successfully Data Found",
+      data: ipdPatientDischargeNurse,
+    });
+  } catch (error) {
+    res.status(500).json("internal server error");
+  }
+});
+Router.get("/IPDPatient-GET-ALL-doctor/:doctorId", async (req, res) => {
+  const Id = req.params.doctorId;
+  try {
+    const ipdPatientDischargeNurse = await IPDPatientModel.find({
+      $and: [{ ipdDoctorId: Id }, { ipdPatientDischarged: false }],
+    });
+    if (!ipdPatientDischargeNurse) {
+      return res.status(403).json({ message: "No Data Found" });
+    }
+    return res.status(200).json({
+      message: "Successfully Data Found",
+      data: ipdPatientDischargeNurse,
+    });
+  } catch (error) {
+    res.status(500).json("internal server error");
   }
 });
 

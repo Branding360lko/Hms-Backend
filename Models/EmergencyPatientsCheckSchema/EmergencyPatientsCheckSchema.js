@@ -63,6 +63,11 @@ const EmergencyPatientsCheckSchema = new Schema(
       type: String,
       require: true,
     },
+    discharge: {
+      type: Boolean,
+      require: true,
+      default: false,
+    },
   },
   { timestamps: true }
 );

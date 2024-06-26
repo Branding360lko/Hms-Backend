@@ -24,7 +24,9 @@ const upload = multer({ storage, fileFilter });
 
 Router.get("/All-EmergencyPatientsChecks-Routes", async (req, res) => {
   try {
-    const emergencyData = await EmergencyPatientsCheck.find({});
+    const emergencyData = await EmergencyPatientsCheck.find({
+      discharge: false,
+    });
     if (!emergencyData) {
       res.status(404).json("No Emergency Data Found");
     }
@@ -60,12 +62,12 @@ Router.post(
         medicine: medicine.map((med) => ({
           Name: med.name,
           Quantity: med.quantity,
-          Price: med.price,
+          Price: med.total,
         })),
         test: test.map((tst) => ({
           Name: tst.name,
           Quantity: tst.quantity,
-          Price: tst.price,
+          Price: tst.total,
         })),
         EmergencyPatientData,
         isPatientsChecked,
@@ -384,6 +386,32 @@ Router.get(
         $and: [
           { emergencyPatientNurseRequestForDischarge: true },
           { emergencyPatientDoctorRequestForDischarge: true },
+          { emergencyPatientDischarged: false },
+        ],
+      });
+      if (!EmergencyPatientDischargeList) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      return res.status(200).json({
+        message: "Successfully Data Fetch",
+        data: EmergencyPatientDischargeList,
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
+Router.get(
+  "/get-emergency-discharge-patients-request-list-nurse/:nurseId",
+  async (req, res) => {
+    const Id = req.params.nurseId;
+    try {
+      const EmergencyPatientDischargeList = await EmergencyPatientModel.find({
+        $and: [
+          { nurseId: Id },
+          { emergencyPatientNurseRequestForDischarge: true },
+          { emergencyPatientDoctorRequestForDischarge: true },
+          { emergencyPatientDischarged: false },
         ],
       });
       if (!EmergencyPatientDischargeList) {

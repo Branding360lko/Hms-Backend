@@ -13,6 +13,7 @@ const IPDNurseDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPD
 const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
 
 const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
+const IPD = require("../../Models/IPDSchema/IPDSchema");
 
 const generateUniqueId = () => {
   const date = new Date();
@@ -148,6 +149,12 @@ Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
               bedId: ipdPatientUpdatedData.ipdBedNo,
             },
             { bedAvailableOrNot: true }
+          );
+          const ipdDischarge = await IPD.updateMany(
+            {
+              ipdPatientMainId: ipdPatientUpdatedData.mainId,
+            },
+            { discharge: true }
           );
           if (ManageBedsUpdatedData) {
             //   // console.log(totalCharges("2024-05-07T11:52:28.952+00:00", 500));

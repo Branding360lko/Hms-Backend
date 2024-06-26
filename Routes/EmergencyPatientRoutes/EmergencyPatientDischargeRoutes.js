@@ -13,6 +13,7 @@ const EmergencyNurseDischargeDetailsModel = require("../../Models/EmergencyPatie
 const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
 
 const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
+const EmergencyPatientsCheck = require("../../Models/EmergencyPatientsCheckSchema/EmergencyPatientsCheckSchema");
 
 const generateUniqueId = () => {
   const date = new Date();
@@ -134,6 +135,14 @@ Router.put("/EmergencyPatient-PUT-DISCHARGE/:Id", async (req, res) => {
               bedId: emergencyPatientUpdatedData.bedId,
             },
             { bedAvailableOrNot: true }
+          );
+          const emergencycheckroute = await EmergencyPatientsCheck.updateMany(
+            {
+              mainId: emergencyPatientUpdatedData.mainId,
+            },
+            {
+              discharge: true,
+            }
           );
           if (ManageBedsUpdatedData) {
             const newDischargeReciept =

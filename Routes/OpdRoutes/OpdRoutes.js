@@ -237,16 +237,31 @@ Router.get("/nurse-dashboard-details/:nurseId", async (req, res) => {
       ipdNurseId: Id,
       ipdPatientDischarged: false,
     });
+    const ipdPatientsDischargeDetails = await IPDPatientModel.countDocuments({
+      ipdNurseId: Id,
+      ipdPatientDischarged: false,
+      ipdPatientNurseRequestForDischarge: true,
+      ipdPatientDoctorRequestForDischarge: true,
+    });
     const emergencyPatientsDetails = await EmergencyPatientModel.countDocuments(
       {
         nurseId: Id,
         emergencyPatientDischarged: false,
       }
     );
+    const emergencyPatientsDischargeDetails =
+      await EmergencyPatientModel.countDocuments({
+        nurseId: Id,
+        emergencyPatientDischarged: false,
+        emergencyPatientNurseRequestForDischarge: true,
+        emergencyPatientDoctorRequestForDischarge: true,
+      });
 
     res.status(200).json({
       ipdPatientsDetails,
       emergencyPatientsDetails,
+      ipdPatientsDischargeDetails,
+      emergencyPatientsDischargeDetails,
     });
   } catch (error) {
     console.log(error);

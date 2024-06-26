@@ -14,6 +14,8 @@ require("../../DB/connection");
 
 const DoctorModel = require("../../Models/DoctorSchema/DoctorSchema");
 const DoctorProfessionalDetailsModel = require("../../Models/DoctorSchema/DoctorProfessionalDetailsSchema");
+const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
+const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
 
 // const generateUniqueId = () => {
 //   const date = new Date();
@@ -162,6 +164,66 @@ router.get("/get-each-doctor-with-patients", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+router.get(
+  "/get-each-doctor-with-patients-nurse/:nurseId",
+  async (req, res) => {
+    const Id = req.params.nurseId;
+    try {
+      const doctorsPatientsList = await IPDPatientModel.aggregate([
+        {
+          $match: {
+            $and: [{ ipdNurseId: Id }, { ipdPatientDischarged: false }],
+          },
+        },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "ipdDoctorId",
+            foreignField: "doctorId",
+            as: "doctorAsignWithPatients",
+          },
+        },
+        {
+          $unwind: {
+            path: "$doctorAsignWithPatients",
+          },
+        },
+        {
+          $project: {
+            _id: "$_id",
+            doctorId: "$doctorAsignWithPatients.doctorId",
+            doctorName: "$doctorAsignWithPatients.doctorName",
+            doctorBloodGroup: "$doctorAsignWithPatients.doctorBloodGroup",
+            doctorSpecialization:
+              "$doctorAsignWithPatients.doctorSpecialization",
+            doctorQualification: "$doctorAsignWithPatients.doctorQualification",
+            doctorPhone: "$doctorAsignWithPatients.doctorPhone",
+            doctorEmail: "$doctorAsignWithPatients.doctorEmail",
+            Ipdpatient_id: "$_id",
+            IpdpatientId: "$ipdPatientId",
+            IpdPatientNotes: "$ipdPatientNotes",
+            IpdPatientCreatedTime: "$updatedAt",
+            IpdPatientMainId: "$mainId",
+            IpdPatientNurseId: "$ipdNurseId",
+            IpdPatientDischarge: "$ipdPatientDischarged",
+          },
+        },
+      ]);
+      if (!doctorsPatientsList) {
+        return res.status(403).json({
+          message: "SomeThing Went Wrong While Fetching Data",
+        });
+      }
+      return res.status(200).json({
+        message: "Data Fetch Successfully",
+        data: doctorsPatientsList,
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json("Internal Server Error");
+    }
+  }
+);
 router.get("/get-each-doctor-with-patients-emergency", async (req, res) => {
   try {
     const doctorsPatientsList = await DoctorModel.aggregate([
@@ -211,6 +273,67 @@ router.get("/get-each-doctor-with-patients-emergency", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+router.get(
+  "/get-each-doctor-with-patients-emergency-nurse/:nurseId",
+  async (req, res) => {
+    const Id = req.params.nurseId;
+    try {
+      const doctorsPatientsList = await EmergencyPatientModel.aggregate([
+        {
+          $match: {
+            $and: [{ nurseId: Id }, { emergencyPatientDischarged: false }],
+          },
+        },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "doctorId",
+            foreignField: "doctorId",
+            as: "doctorAsignWithEmergencyPatients",
+          },
+        },
+        {
+          $unwind: {
+            path: "$doctorAsignWithEmergencyPatients",
+          },
+        },
+        {
+          $project: {
+            _id: "$_id",
+            doctorId: "$doctorAsignWithEmergencyPatients.doctorId",
+            doctorName: "$doctorAsignWithEmergencyPatients.doctorName",
+            doctorBloodGroup:
+              "$doctorAsignWithEmergencyPatients.doctorBloodGroup",
+            doctorSpecialization:
+              "$doctorAsignWithEmergencyPatients.doctorSpecialization",
+            doctorQualification:
+              "$doctorAsignWithEmergencyPatients.doctorQualification",
+            doctorPhone: "$doctorAsignWithEmergencyPatients.doctorPhone",
+            doctorEmail: "$doctorAsignWithEmergencyPatients.doctorEmail",
+            Emergencypatient_id: "$_id",
+            patientsId: "$patientId",
+
+            EmergencyNotes: "$notes",
+            EmergencyPatientCreatedTime: "$updatedAt",
+            EmergencyPatientMainId: "$mainId",
+          },
+        },
+      ]);
+      if (!doctorsPatientsList) {
+        return res.status(403).json({
+          message: "SomeThing Went Wrong While Fetching Data",
+        });
+      }
+      return res.status(200).json({
+        message: "Data Fetch Successfully",
+        data: doctorsPatientsList,
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json("Internal Server Error");
+    }
+  }
+);
 
 router.post("/Doctor-POST", upload.single("doctorImage"), async (req, res) => {
   const {

@@ -71,6 +71,11 @@ const IPDSchema = new Schema(
       type: String,
       default: "Assigned Doctor",
     },
+    discharge: {
+      type: Boolean,
+      require: true,
+      default: false,
+    },
   },
   { timestamps: true }
 );
