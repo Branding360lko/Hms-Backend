@@ -51,6 +51,64 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.get("/OPDPatient-GET-ALL-with-doctorId/:doctorId", async (req, res) => {
+  const Id = req.params.doctorId;
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
+  console.log(page, limit);
+  try {
+    const OPDPatientData = await OPDPatientModel.aggregate([
+      {
+        $match: {
+          opdDoctorId: Id,
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      { $unwind: "$patientData" },
+      {
+        $project: {
+          _id: 1,
+          mainId: 1,
+          opdPatientId: 1,
+          opdCaseId: 1,
+          opdId: 1,
+          opdDoctorId: 1,
+          opdPatientBloodPressure: 1,
+          opdPatientStandardCharges: 1,
+          opdPatientPaymentMode: 1,
+          opdDoctorVisitDate: 1,
+          opdPatientNotes: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          patientName: "$patientData.patientName",
+        },
+      },
+    ])
+      .sort({ createdAt: -1 })
+      .skip(page * limit)
+      .limit(limit);
+    const totalDocuments = await OPDPatientModel.countDocuments({
+      opdDoctorId: Id,
+    });
+    res.status(200).json({
+      OPDPatientData,
+      totalDocuments,
+      totalPages: Math.ceil(totalDocuments / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Internal Server Error");
+  }
+});
 
 Router.get("/OPDPatient-GET-ONE/:Id", async (req, res) => {
   const id = req.params.Id;

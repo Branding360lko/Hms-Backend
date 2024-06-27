@@ -37,6 +37,11 @@ const OPDSchema = new Schema(
       require: true,
       default: false,
     },
+    doctorVisitCompleted: {
+      type: Boolean,
+      require: true,
+      default: false,
+    },
   },
   { timestamps: true }
 );

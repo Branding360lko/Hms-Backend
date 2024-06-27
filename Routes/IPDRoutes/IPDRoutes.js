@@ -444,7 +444,7 @@ Router.get("/IPDPatient-GET-ALL-Nurse/:nurseId", async (req, res) => {
   try {
     const ipdPatientDischargeNurse = await IPDPatientModel.find({
       $and: [{ ipdNurseId: Id }, { ipdPatientDischarged: false }],
-    });
+    }).sort({ createdAt: -1 });
     if (!ipdPatientDischargeNurse) {
       return res.status(403).json({ message: "No Data Found" });
     }

@@ -52,14 +52,6 @@ Router.post("/OPD-Create", upload.none(), async (req, res) => {
     isPatientsChecked,
     NextAppoiment,
   } = req.body;
-  console.log(
-    medicine,
-    test,
-    Symptoms,
-    Note,
-    OpdPatientData,
-    isPatientsChecked
-  );
   try {
     const opd = await OPD.create({
       Note,
@@ -201,6 +193,23 @@ Router.post("/update-patient-checked/:Id", async (req, res) => {
     return res.status(201).json({ message: "Successfully Opd Value Updated" });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+Router.put("/update-doctor-visited-status/:patientId", async (req, res) => {
+  const Id = req.params.patientId;
+  try {
+    const opdPatient = await OPD.findByIdAndUpdate(
+      { _id: Id },
+      {
+        doctorVisitCompleted: true,
+      }
+    );
+    if (!opdPatient) {
+      return res.status(403).json({ message: "No Data Found" });
+    }
+    return res.status(200).json({ message: "Successfully Status Updated" });
+  } catch (error) {
+    res.status(500).json("internal server error");
   }
 });
 Router.get("/doctor-dashboard-details/:doctorId", async (req, res) => {
