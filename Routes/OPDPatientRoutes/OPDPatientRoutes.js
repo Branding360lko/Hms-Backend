@@ -109,7 +109,77 @@ Router.get("/OPDPatient-GET-ALL-with-doctorId/:doctorId", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
+  const Id = req.params.doctorId;
+  const searchTerm = req.query.search || "";
+  const Page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
+  console.log(Page, limit);
+  try {
+    const searchRegex = new RegExp(searchTerm, "i");
+    const searchData = await OPDPatientModel.aggregate([
+      {
+        $match: {
+          opdDoctorId: Id,
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientDetails",
+        },
+      },
+      {
+        $unwind: "$patientDetails",
+      },
+      {
+        $match: { "patientDetails.patientName": { $regex: searchRegex } },
+      },
+    ])
+      .skip(Page * limit)
+      .limit(limit);
+    const totalDocuments = await OPDPatientModel.aggregate([
+      {
+        $match: {
+          opdDoctorId: Id,
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientDetails",
+        },
+      },
+      {
+        $unwind: "$patientDetails",
+      },
+      {
+        $match: { "patientDetails.patientName": { $regex: searchRegex } },
+      },
+      {
+        $count: "totalDocument",
+      },
+    ]);
 
+    if (!searchData) {
+      return res
+        .status(403)
+        .json({ message: "No Patients Found With This Doctor Id" });
+    }
+    return res.status(200).json({
+      searchData,
+      totalDocuments: totalDocuments?.[0]?.totalDocument,
+      totalPages: Math.ceil(totalDocuments?.[0]?.totalDocument / limit),
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("internal server error");
+  }
+});
 Router.get("/OPDPatient-GET-ONE/:Id", async (req, res) => {
   const id = req.params.Id;
 
