@@ -61,9 +61,54 @@ Router.get(
 Router.get("/ipd-patients/:DoctorId", async (req, res) => {
   const DoctorId = req.params.DoctorId;
   try {
-    const ipdPatients = await IPDPatientModel.find({
-      $and: [{ ipdDoctorId: DoctorId }, { ipdPatientDischarged: false }],
-    });
+    const ipdPatients = await IPDPatientModel.aggregate([
+      {
+        $match: {
+          $and: [{ ipdDoctorId: DoctorId }, { ipdPatientDischarged: false }],
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "ipdPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      { $unwind: "$patientData" },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "ipdDoctorId",
+          foreignField: "doctorId",
+          as: "doctorData",
+        },
+      },
+      { $unwind: "$doctorData" },
+      {
+        $project: {
+          _id: 1,
+          mainId: 1,
+          ipdPatientId: 1,
+          ipdDoctorId: 1,
+          ipdNurseId: 1,
+          ipdDepositAmount: 1,
+          ipdFloorNo: 1,
+          ipdBedNo: 1,
+          ipdPatientNotes: 1,
+          ipdPatientNurseRequestForDischarge: 1,
+          ipdPatientDoctorRequestForDischarge: 1,
+          ipdPatientNurseConfirmation: 1,
+          ipdPatientDoctorConfirmation: 1,
+          ipdPatientDischarged: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          patientName: "$patientData.patientName",
+          doctorName: "$doctorData.doctorName",
+        },
+      },
+    ]);
     if (!ipdPatients) {
       return res.status(403).json({ message: "No Data Found" });
     }

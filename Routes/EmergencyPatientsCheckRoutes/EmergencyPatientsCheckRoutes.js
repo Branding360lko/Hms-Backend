@@ -426,4 +426,29 @@ Router.get(
     }
   }
 );
+Router.get(
+  "/get-emergency-discharge-patients-request-list-doctor/:doctorId",
+  async (req, res) => {
+    const Id = req.params.doctorId;
+    try {
+      const EmergencyPatientDischargeList = await EmergencyPatientModel.find({
+        $and: [
+          { doctorId: Id },
+          { emergencyPatientNurseRequestForDischarge: true },
+          { emergencyPatientDoctorRequestForDischarge: true },
+          { emergencyPatientDischarged: false },
+        ],
+      });
+      if (!EmergencyPatientDischargeList) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      return res.status(200).json({
+        message: "Successfully Data Fetch",
+        data: EmergencyPatientDischargeList,
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
 module.exports = Router;

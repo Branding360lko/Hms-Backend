@@ -114,7 +114,6 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
   const searchTerm = req.query.search || "";
   const Page = parseInt(req.query.page) || 0;
   const limit = parseInt(req.query.limit) || 10;
-  console.log(Page, limit);
   try {
     const searchRegex = new RegExp(searchTerm, "i");
     const searchData = await OPDPatientModel.aggregate([
@@ -136,6 +135,25 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
       },
       {
         $match: { "patientDetails.patientName": { $regex: searchRegex } },
+      },
+      {
+        $project: {
+          _id: 1,
+          mainId: 1,
+          opdPatientId: 1,
+          opdCaseId: 1,
+          opdId: 1,
+          opdDoctorId: 1,
+          opdPatientBloodPressure: 1,
+          opdPatientStandardCharges: 1,
+          opdPatientPaymentMode: 1,
+          opdDoctorVisitDate: 1,
+          opdPatientNotes: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          patientName: "$patientDetails.patientName",
+        },
       },
     ])
       .skip(Page * limit)
@@ -160,6 +178,7 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
       {
         $match: { "patientDetails.patientName": { $regex: searchRegex } },
       },
+
       {
         $count: "totalDocument",
       },
@@ -173,7 +192,9 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
     return res.status(200).json({
       searchData,
       totalDocuments: totalDocuments?.[0]?.totalDocument,
-      totalPages: Math.ceil(totalDocuments?.[0]?.totalDocument / limit),
+      totalPages: Math.ceil(totalDocuments?.[0]?.totalDocument / limit)
+        ? Math.ceil(totalDocuments?.[0]?.totalDocument / limit)
+        : 0,
     });
   } catch (error) {
     console.log(error);
