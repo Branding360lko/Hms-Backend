@@ -4,6 +4,7 @@ const EmergencyPatientsCheck = require("../../Models/EmergencyPatientsCheckSchem
 const multer = require("multer");
 const mongoose = require("mongoose");
 const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
+const path = require("path");
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "assets/images");
@@ -406,14 +407,54 @@ Router.get(
   async (req, res) => {
     const Id = req.params.nurseId;
     try {
-      const EmergencyPatientDischargeList = await EmergencyPatientModel.find({
-        $and: [
-          { nurseId: Id },
-          { emergencyPatientNurseRequestForDischarge: true },
-          { emergencyPatientDoctorRequestForDischarge: true },
-          { emergencyPatientDischarged: false },
-        ],
-      });
+      const EmergencyPatientDischargeList =
+        await EmergencyPatientModel.aggregate([
+          {
+            $match: {
+              $and: [
+                { nurseId: Id },
+                { emergencyPatientNurseRequestForDischarge: true },
+                { emergencyPatientDoctorRequestForDischarge: true },
+                { emergencyPatientDischarged: false },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: "patients",
+              localField: "patientId",
+              foreignField: "patientId",
+              as: "patientData",
+            },
+          },
+          {
+            $unwind: {
+              path: "$patientData",
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              mainId: 1,
+              patientId: 1,
+              doctorId: 1,
+              nurseId: 1,
+              bedId: 1,
+              notes: 1,
+              emergencyDepositAmount: 1,
+              emergencyFloorNo: 1,
+              emergencyPatientNurseRequestForDischarge: 1,
+              emergencyPatientDoctorRequestForDischarge: 1,
+              emergencyPatientNurseConfirmation: 1,
+              emergencyPatientDoctorConfirmation: 1,
+              emergencyPatientDischarged: 1,
+              isDeleted: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              patientName: "$patientData.patientName",
+            },
+          },
+        ]);
       if (!EmergencyPatientDischargeList) {
         return res.status(403).json({ message: "No Data Found" });
       }
@@ -431,14 +472,54 @@ Router.get(
   async (req, res) => {
     const Id = req.params.doctorId;
     try {
-      const EmergencyPatientDischargeList = await EmergencyPatientModel.find({
-        $and: [
-          { doctorId: Id },
-          { emergencyPatientNurseRequestForDischarge: true },
-          { emergencyPatientDoctorRequestForDischarge: true },
-          { emergencyPatientDischarged: false },
-        ],
-      });
+      const EmergencyPatientDischargeList =
+        await EmergencyPatientModel.aggregate([
+          {
+            $match: {
+              $and: [
+                { doctorId: Id },
+                { emergencyPatientNurseRequestForDischarge: true },
+                { emergencyPatientDoctorRequestForDischarge: true },
+                { emergencyPatientDischarged: false },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: "patients",
+              localField: "patientId",
+              foreignField: "patientId",
+              as: "patientData",
+            },
+          },
+          {
+            $unwind: {
+              path: "$patientData",
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              mainId: 1,
+              patientId: 1,
+              doctorId: 1,
+              nurseId: 1,
+              bedId: 1,
+              notes: 1,
+              emergencyDepositAmount: 1,
+              emergencyFloorNo: 1,
+              emergencyPatientNurseRequestForDischarge: 1,
+              emergencyPatientDoctorRequestForDischarge: 1,
+              emergencyPatientNurseConfirmation: 1,
+              emergencyPatientDoctorConfirmation: 1,
+              emergencyPatientDischarged: 1,
+              isDeleted: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              PatientName: "$patientData.patientName",
+            },
+          },
+        ]);
       if (!EmergencyPatientDischargeList) {
         return res.status(403).json({ message: "No Data Found" });
       }
@@ -447,6 +528,7 @@ Router.get(
         data: EmergencyPatientDischargeList,
       });
     } catch (error) {
+      console.log(error);
       res.status(500).json("internal server error");
     }
   }

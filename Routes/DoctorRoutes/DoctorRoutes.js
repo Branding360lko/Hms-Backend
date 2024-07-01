@@ -189,6 +189,19 @@ router.get(
           },
         },
         {
+          $lookup: {
+            from: "patients",
+            localField: "ipdPatientId",
+            foreignField: "patientId",
+            as: "PatientData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$PatientData",
+          },
+        },
+        {
           $project: {
             _id: "$_id",
             doctorId: "$doctorAsignWithPatients.doctorId",
@@ -206,6 +219,7 @@ router.get(
             IpdPatientMainId: "$mainId",
             IpdPatientNurseId: "$ipdNurseId",
             IpdPatientDischarge: "$ipdPatientDischarged",
+            IpdPatientName: "$PatientData.patientName",
           },
         },
       ]);
@@ -399,6 +413,19 @@ router.get(
           },
         },
         {
+          $lookup: {
+            from: "patients",
+            localField: "patientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$patientData",
+          },
+        },
+        {
           $project: {
             _id: "$_id",
             doctorId: "$doctorAsignWithEmergencyPatients.doctorId",
@@ -417,6 +444,7 @@ router.get(
             EmergencyNotes: "$notes",
             EmergencyPatientCreatedTime: "$updatedAt",
             EmergencyPatientMainId: "$mainId",
+            EmergencyPatientName: "$patientData.patientName",
           },
         },
       ]);
