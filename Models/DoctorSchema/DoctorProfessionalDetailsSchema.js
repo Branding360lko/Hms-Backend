@@ -16,6 +16,38 @@ const DoctorProfessionalDetailsSchema = new Schema(
       type: Number,
       required: true,
     },
+    doctorOPDFee: {
+      type: Number,
+      required: true,
+    },
+    doctorGereralHighFee: {
+      type: Number,
+      required: true,
+    },
+    doctorGereralJanataFee: {
+      type: Number,
+      required: true,
+    },
+    doctorSemiPrivateFee: {
+      type: Number,
+      required: true,
+    },
+    doctorPrivateSingleAcFee: {
+      type: Number,
+      required: true,
+    },
+    doctorPrivateSingleAcDlxFee: {
+      type: Number,
+      required: true,
+    },
+    doctorPrivateSuiteFee: {
+      type: Number,
+      required: true,
+    },
+    doctorEmergencyFee: {
+      type: Number,
+      required: true,
+    },
     doctorDesignation: {
       type: String,
       required: true,

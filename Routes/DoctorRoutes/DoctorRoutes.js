@@ -203,7 +203,7 @@ router.get(
         },
         {
           $project: {
-            _id: "$_id",
+            _id: "$doctorAsignWithPatients._id",
             doctorId: "$doctorAsignWithPatients.doctorId",
             doctorName: "$doctorAsignWithPatients.doctorName",
             doctorBloodGroup: "$doctorAsignWithPatients.doctorBloodGroup",
