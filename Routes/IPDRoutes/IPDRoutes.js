@@ -145,14 +145,15 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
     doctorId,
     VisitDateTime,
     ReferedDoctorId,
+    AdditionalDoctorId,
     ipdPatientMainId,
+    ipdPatientCurrentBed,
     submittedBy,
   } = req.body;
 
   try {
     const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
     const test = req.body.test ? JSON.parse(req.body.test) : [];
-
     const ipd = await IPD.create({
       Note,
       Symptoms,
@@ -171,7 +172,9 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       doctorId,
       VisitDateTime,
       ReferedDoctorId,
+      AdditionalDoctorId,
       ipdPatientMainId,
+      ipdPatientCurrentBed,
       submittedBy,
     });
     const ipdData = await IPD.findById(ipd?._id);
@@ -265,6 +268,7 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
           doctorData: 1,
           ReferedDoctor: 1,
           submittedBy: 1,
+          ipdPatientCurrentBed: 1,
         },
       },
     ]);
@@ -306,7 +310,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
       {
         $lookup: {
           from: "managebeds",
-          localField: "ipdPatientDetails.ipdBedNo",
+          localField: "ipdPatientCurrentBed",
           foreignField: "bedId",
           as: "bedDetails",
         },
@@ -322,6 +326,14 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           localField: "doctorId",
           foreignField: "_id",
           as: "doctorData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "AdditionalDoctorId",
+          foreignField: "_id",
+          as: "additionalDoctorData",
         },
       },
       {
@@ -343,6 +355,14 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
       {
         $lookup: {
           from: "doctorprofessionaldetails",
+          localField: "additionalDoctorData.doctorId",
+          foreignField: "doctorId",
+          as: "additionalDoctorFeesDatails",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
           localField: "ReferedDoctor.doctorId",
           foreignField: "doctorId",
           as: "RefereddoctorFeesDatails",
@@ -355,8 +375,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           VisitDateTime: 1,
           doctorData: 1,
           ReferedDoctor: 1,
-          // doctorFeesDatails: "$doctorFeesDatails.doctorFee",
-          // RefereddoctorFeesDatails: "$RefereddoctorFeesDatails.doctorFee",
+          submittedBy: 1,
           DailyMedicinePriceTotal: { $sum: "$medicine.Price" },
           DailyTestPriceTotal: { $sum: "$test.Price" },
           DailyDoctorVisitChargeBasedOnBed: {
@@ -583,6 +602,118 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
               default: 0,
             },
           },
+          DailyAdditionalDoctorVisitChargeBasedOnBed: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "SEMI-PRIVATE",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorSemiPrivateFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "EMERGENCY",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorEmergencyFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL HIGH",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorGereralHighFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL JANATA",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorGereralJanataFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SUITE",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorPrivateSuiteFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC-DLX",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorPrivateSingleAcDlxFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorPrivateSingleAcFee",
+                },
+              ],
+              default: 0,
+            },
+          },
         },
       },
       {
@@ -591,6 +722,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           DailyMedicinePriceTotal: { $first: "$DailyMedicinePriceTotal" },
           DailyTestPriceTotal: { $first: "$DailyTestPriceTotal" },
           visitDate: { $first: "$VisitDateTime" },
+          submittedBy: { $first: "$submittedBy" },
           // doctorFeesDatails: { $first: "$doctorFeesDatails" },
           // RefereddoctorFeesDatails: { $first: "$RefereddoctorFeesDatails" },
           DailyDoctorVisitChargeBasedOnBed: {
@@ -598,6 +730,9 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           },
           DailyReferDoctorVisitChargeBasedOnBed: {
             $first: "$DailyReferDoctorVisitChargeBasedOnBed",
+          },
+          DailyAdditionalDoctorVisitChargeBasedOnBed: {
+            $first: "$DailyAdditionalDoctorVisitChargeBasedOnBed",
           },
         },
       },
@@ -611,13 +746,28 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           // RefereddoctorFeesDatails: 1,
           DailyDoctorVisitChargeBasedOnBed: 1,
           DailyReferDoctorVisitChargeBasedOnBed: 1,
+          DailyAdditionalDoctorVisitChargeBasedOnBed: 1,
           doctorVisitCharge: {
             $cond: {
               if: { $ne: ["$DailyReferDoctorVisitChargeBasedOnBed", []] },
               then: {
                 $arrayElemAt: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
               },
-              else: { $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0] },
+              else: {
+                $cond: {
+                  if: { $eq: ["$submittedBy", "Additional Doctor"] },
+                  then: {
+                    $arrayElemAt: [
+                      "$DailyAdditionalDoctorVisitChargeBasedOnBed",
+                      0,
+                    ],
+                  },
+                  else: {
+                    $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+                  },
+                },
+                // $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0]
+              },
             },
           },
         },

@@ -215,6 +215,7 @@ router.get(
             Ipdpatient_id: "$_id",
             IpdpatientId: "$ipdPatientId",
             IpdPatientNotes: "$ipdPatientNotes",
+            IpdPatietnBed: "$ipdBedNo",
             IpdPatientCreatedTime: "$updatedAt",
             IpdPatientMainId: "$mainId",
             IpdPatientNurseId: "$ipdNurseId",

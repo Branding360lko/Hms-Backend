@@ -74,6 +74,7 @@ Router.get("/get-all-refered-patients", async (req, res) => {
           PatientsDetails: 1,
           ReferringDoctorDetails: 1,
           ReferredDoctorDetails: 1,
+          IpdPatietnBed: "$ipdPatientsDetails.ipdBedNo",
         },
       },
     ]);
