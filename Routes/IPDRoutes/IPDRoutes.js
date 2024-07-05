@@ -1,12 +1,9 @@
 const express = require("express");
-
 const Router = express.Router();
-
 const IPD = require("../../Models/IPDSchema/IPDSchema");
 const multer = require("multer");
 const mongoose = require("mongoose");
 const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
-
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "assets/images");
@@ -23,9 +20,7 @@ const fileFilter = (req, file, cb) => {
     cb(null, false);
   }
 };
-
 const upload = multer({ storage, fileFilter });
-
 Router.get(
   "/get-patients-details-with-ipdId/:Id",
   upload.none(),
@@ -248,6 +243,14 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
       {
         $lookup: {
           from: "doctors",
+          localField: "AdditionalDoctorId",
+          foreignField: "_id",
+          as: "AdditionalDoctorData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
           localField: "ReferedDoctorId",
           foreignField: "_id",
           as: "ReferedDoctor",
@@ -267,6 +270,7 @@ Router.get("/get-one-ipd-data/:Id", async (req, res) => {
           patientsData: 1,
           doctorData: 1,
           ReferedDoctor: 1,
+          AdditionalDoctorData: 1,
           submittedBy: 1,
           ipdPatientCurrentBed: 1,
         },
