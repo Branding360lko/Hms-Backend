@@ -7,7 +7,7 @@
     "server": "nodemon --ignore assets/images/* index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Syed Fahad Junaid",
+  "author": "Branding 360 Neo Private Limited",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
