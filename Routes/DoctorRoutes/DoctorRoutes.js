@@ -443,6 +443,7 @@ router.get(
             patientsId: "$patientId",
 
             EmergencyNotes: "$notes",
+            EmergencyPatientsCurrentBed: "$bedId",
             EmergencyPatientCreatedTime: "$updatedAt",
             EmergencyPatientMainId: "$mainId",
             EmergencyPatientName: "$patientData.patientName",
