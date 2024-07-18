@@ -1066,5 +1066,82 @@ Router.get("/IPDPatient-GET-ALL-doctor/:doctorId", async (req, res) => {
     res.status(500).json("internal server error");
   }
 });
+Router.get(
+  "/check-ipd-patients-doctor-visit/:ipdPatientMainId",
+  async (req, res) => {
+    const Id = req.params.ipdPatientMainId;
+    try {
+      const ipdPatientData = await IPD.aggregate([
+        {
+          $match: {
+            ipdPatientMainId: Id,
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            medicine: 1,
+            test: 1,
+            Symptoms: 1,
+            Note: 1,
+            ipdPatientData: 1,
+            ipdPatientMainId: 1,
+            doctorId: 1,
+            ReferedDoctorId: 1,
+            AdditionalDoctorId: 1,
+            ipdPatientCurrentBed: 1,
+            VisitDateTime: 1,
+            isPatientsChecked: 1,
+            submittedBy: 1,
+            discharge: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      ]);
+      const patientPersonalData = await IPDPatientModel.aggregate([
+        {
+          $match: {
+            mainId: Id,
+          },
+        },
+        {
+          $lookup: {
+            from: "patients",
+            localField: "ipdPatientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        { $unwind: "$patientData" },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "ipdDoctorId",
+            foreignField: "doctorId",
+            as: "doctorData",
+          },
+        },
+        { $unwind: "$doctorData" },
+      ]);
+      if (!ipdPatientData) {
+        return res.status(403).json({ message: "No Data Found" });
+      }
+      if (ipdPatientData?.length === 0) {
+        return res.status(202).json({
+          message: "No Doctor Visit Done Yet",
+          patientData: patientPersonalData,
+        });
+      }
+      return res.status(200).json({
+        message: "Data Fetch Successfully",
+        data: ipdPatientData,
+        patientData: patientPersonalData,
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
 
 module.exports = Router;
