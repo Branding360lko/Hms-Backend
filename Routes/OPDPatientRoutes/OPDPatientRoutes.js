@@ -65,6 +65,17 @@ Router.get("/OPDPatient-GET-ALL-with-doctorId/:doctorId", async (req, res) => {
       },
       {
         $lookup: {
+          from: "opds",
+          localField: "_id",
+          foreignField: "OpdPatientData",
+          as: "opdPatientCheckData",
+        },
+      },
+      // {
+      //   $unwind: "$opdPatientCheckData",
+      // },
+      {
+        $lookup: {
           from: "patients",
           localField: "opdPatientId",
           foreignField: "patientId",
@@ -85,6 +96,7 @@ Router.get("/OPDPatient-GET-ALL-with-doctorId/:doctorId", async (req, res) => {
           opdPatientPaymentMode: 1,
           opdDoctorVisitDate: 1,
           opdPatientNotes: 1,
+          opdPatientCheckData: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -124,6 +136,14 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
       },
       {
         $lookup: {
+          from: "opds",
+          localField: "_id",
+          foreignField: "OpdPatientData",
+          as: "opdPatientCheckData",
+        },
+      },
+      {
+        $lookup: {
           from: "patients",
           localField: "opdPatientId",
           foreignField: "patientId",
@@ -149,6 +169,7 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
           opdPatientPaymentMode: 1,
           opdDoctorVisitDate: 1,
           opdPatientNotes: 1,
+          opdPatientCheckData: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,

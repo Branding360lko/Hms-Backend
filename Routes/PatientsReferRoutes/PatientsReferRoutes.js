@@ -89,6 +89,85 @@ Router.get("/get-all-refered-patients", async (req, res) => {
   }
 });
 Router.get(
+  "/get-all-refered-patients-by-nurseId/:nurseId",
+  async (req, res) => {
+    const Id = req.params.nurseId;
+    try {
+      const referedPatients = await PatientsRefer.aggregate([
+        {
+          $lookup: {
+            from: "ipdpatients",
+            localField: "ipdPatient",
+            foreignField: "_id",
+            as: "ipdPatientsDetails",
+          },
+        },
+        {
+          $unwind: "$ipdPatientsDetails",
+        },
+        {
+          $lookup: {
+            from: "patients",
+            localField: "ipdPatientsDetails.ipdPatientId",
+            foreignField: "patientId",
+            as: "PatientsDetails",
+          },
+        },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "referringDoctor",
+            foreignField: "_id",
+            as: "ReferringDoctorDetails",
+          },
+        },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "ReferredDoctor",
+            foreignField: "_id",
+            as: "ReferredDoctorDetails",
+          },
+        },
+        {
+          $match: {
+            $and: [
+              { "ipdPatientsDetails.ipdNurseId": Id },
+              { "ipdPatientsDetails.ipdPatientDischarged": false },
+            ],
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            ipdPatient: 1,
+            referringDoctor: 1,
+            ReferredDoctor: 1,
+            ReferedDateAndTime: 1,
+            ReasonForReferal: 1,
+            Note: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            ipdPatientsDetails: 1,
+            PatientsDetails: 1,
+            ReferringDoctorDetails: 1,
+            ReferredDoctorDetails: 1,
+            IpdPatietnBed: "$ipdPatientsDetails.ipdBedNo",
+          },
+        },
+      ]);
+      if (!referedPatients) {
+        return res.status(403).json({ message: "No data Found" });
+      }
+      return res
+        .status(200)
+        .json({ message: "Successfully Fetch Data", data: referedPatients });
+    } catch (error) {
+      res.status(500).json("Internal Server Error");
+    }
+  }
+);
+Router.get(
   "/get-all-refered-patients-by-doctorId/:doctorId",
   async (req, res) => {
     const Id = req.params.doctorId;
