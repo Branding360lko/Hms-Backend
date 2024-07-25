@@ -139,6 +139,9 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
     ]);
 
     if (OpdData.length === 0) {
+      return res.status(404).json({ message: "No OPD record", data: [] });
+    }
+    if (!OpdData) {
       return res
         .status(404)
         .json({ message: "No OPD record found with the provided ID" });
@@ -150,6 +153,118 @@ Router.get("/get-one-opd-data/:Id", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.get("/get-one-opd-data-opdPatientId/:Id", async (req, res) => {
+  const Id = req.params.Id;
+
+  try {
+    const OpdData = await OPD.aggregate([
+      {
+        $match: {
+          OpdPatientData: mongoose.Types.ObjectId.createFromHexString(Id),
+        },
+      },
+      {
+        $lookup: {
+          from: "medicines",
+          localField: "medicine",
+          foreignField: "_id",
+          as: "medicineData",
+        },
+      },
+      {
+        $lookup: {
+          from: "tests",
+          localField: "test",
+          foreignField: "_id",
+          as: "testData",
+        },
+      },
+      {
+        $lookup: {
+          from: "opdpatients",
+          localField: "OpdPatientData",
+          foreignField: "_id",
+          as: "OpdPatientData",
+        },
+      },
+
+      // {
+      //   $unwind: "$OpdPatientData",
+      // },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "OpdPatientData.opdPatientId",
+          foreignField: "patientId",
+          as: "patientsData",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          Symptoms: 1,
+          Note: 1,
+          "medicineData.Name": 1,
+          "medicineData.Price": 1,
+          "medicineData._id": 1,
+
+          "testData.Name": 1,
+          "testData._id": 1,
+          OpdPatientData: 1,
+          patientsData: 1,
+          NextAppoiment: 1,
+        },
+      },
+    ]);
+    const patientPersonalData = await OPDPatientModel.aggregate([
+      {
+        $match: {
+          _id: mongoose.Types.ObjectId.createFromHexString(Id),
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientsData",
+        },
+      },
+      {
+        $unwind: "$patientsData",
+      },
+      {
+        $project: {
+          patientsData: 1,
+        },
+      },
+    ]);
+    if (OpdData.length === 0) {
+      return res
+        .status(200)
+        .json({
+          message: "No OPD record",
+          data: [],
+          patientData: patientPersonalData,
+        });
+    }
+    if (!OpdData) {
+      return res
+        .status(404)
+        .json({ message: "No OPD record found with the provided ID" });
+    }
+
+    return res.status(200).json({
+      message: "Data Fetch Successfully",
+      data: OpdData,
+      patientData: patientPersonalData,
+    });
+  } catch (error) {
+    console.error("Error fetching OPD record:", error);
+    res.status(500).json("Internal Server Error");
+  }
+});
+
 Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
   const { Symptoms, Note, test, medicine, isPatientsChecked, NextAppoiment } =
