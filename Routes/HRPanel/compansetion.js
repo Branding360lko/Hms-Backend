@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const Compensation = require("../../Models/HRPanel/CompensationSchema");
+const Compensation = require("../../Models/HRPanel/compensationSchema");
 const Empolyee = require("../../Models/HRPanel/EmpolyeeSchema");
 const mongoose = require("mongoose");
 

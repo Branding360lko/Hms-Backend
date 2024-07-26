@@ -1144,4 +1144,32 @@ Router.get(
   }
 );
 
+Router.get(
+  "/get-ipd-patient-lab-test-record/:ipdPatientId",
+  async (req, res) => {
+    const Id = req.params.ipdPatientId;
+    try {
+      const labTestData = await IPD.aggregate([
+        {
+          $match: {
+            ipdPatientMainId: Id,
+          },
+        },
+        {
+          $project: {
+            test: 1,
+          },
+        },
+      ]);
+      if (!labTestData || labTestData?.length === 0) {
+        return res.status(404).json({ message: "No Data Found" });
+      }
+      return res
+        .status(200)
+        .json({ message: "Data Fetch Successfully", data: labTestData });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
 module.exports = Router;
