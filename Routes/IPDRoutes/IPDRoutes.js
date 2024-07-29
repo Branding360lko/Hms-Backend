@@ -1156,8 +1156,23 @@ Router.get(
           },
         },
         {
+          $unwind: "$test",
+        },
+        {
+          $match: {
+            test: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            tests: { $push: "$test.Name" },
+          },
+        },
+        {
           $project: {
-            test: 1,
+            _id: 0,
+            tests: 1,
           },
         },
       ]);
