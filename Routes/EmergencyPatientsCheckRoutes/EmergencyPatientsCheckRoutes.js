@@ -906,4 +906,90 @@ Router.get(
     }
   }
 );
+Router.get(
+  "/get-Emergency-patient-lab-test-record/:emergencyPatientId",
+  async (req, res) => {
+    const Id = req.params.emergencyPatientId;
+    try {
+      const labTestData = await EmergencyPatientsCheck.aggregate([
+        {
+          $match: {
+            mainId: Id,
+          },
+        },
+        {
+          $unwind: "$test",
+        },
+        {
+          $match: {
+            test: { $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            tests: { $push: "$test.Name" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            tests: 1,
+          },
+        },
+      ]);
+      const nurseName = await EmergencyPatientsCheck.aggregate([
+        {
+          $match: {
+            mainId: Id,
+          },
+        },
+        {
+          $lookup: {
+            from: "emergencypatients",
+            localField: "mainId",
+            foreignField: "mainId",
+            as: "emgPatientDetails",
+          },
+        },
+        {
+          $unwind: {
+            path: "$emgPatientDetails",
+          },
+        },
+        {
+          $lookup: {
+            from: "nurses",
+            localField: "emgPatientDetails.nurseId",
+            foreignField: "nurseId",
+            as: "nurseData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$nurseData",
+          },
+        },
+        {
+          $project: {
+            nurseData: "$nurseData.nurseName",
+          },
+        },
+      ]);
+      if (!labTestData || labTestData?.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No Data Found", data: [], nurse: nurseName?.[0] });
+      }
+      return res.status(200).json({
+        message: "Data Fetch Successfully",
+        data: labTestData,
+        nurse: nurseName?.[0],
+      });
+    } catch (error) {
+      res.status(500).json("internal server error");
+    }
+  }
+);
+
 module.exports = Router;

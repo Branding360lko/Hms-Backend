@@ -712,5 +712,24 @@ router.delete("/Doctor-DELETE/:doctorId", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+router.get("/get-doctor-name/:doctorId", async (req, res) => {
+  const Id = req.params.doctorId;
+  try {
+    const doctorname = await DoctorModel.find({
+      doctorId: Id,
+    });
+    if (!doctorname || doctorname?.length === 0) {
+      return res.status(403).json({ message: "no data found" });
+    }
+    return res
+      .status(200)
+      .json({
+        message: "Data Fetch Successfully",
+        data: doctorname?.[0]?.doctorName,
+      });
+  } catch (error) {
+    return res.status(500).json("internal server error");
+  }
+});
 
 module.exports = router;

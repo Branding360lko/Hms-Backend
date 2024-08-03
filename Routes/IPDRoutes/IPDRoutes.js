@@ -1176,12 +1176,52 @@ Router.get(
           },
         },
       ]);
+      const nurseName = await await IPD.aggregate([
+        {
+          $match: {
+            ipdPatientMainId: Id,
+          },
+        },
+        {
+          $lookup: {
+            from: "ipdpatients",
+            localField: "ipdPatientMainId",
+            foreignField: "mainId",
+            as: "ipdPatientDetails",
+          },
+        },
+        {
+          $unwind: {
+            path: "$ipdPatientDetails",
+          },
+        },
+        {
+          $lookup: {
+            from: "nurses",
+            localField: "ipdPatientDetails.ipdNurseId",
+            foreignField: "nurseId",
+            as: "nurseData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$nurseData",
+          },
+        },
+        {
+          $project: {
+            nurseData: "$nurseData.nurseName",
+          },
+        },
+      ]);
       if (!labTestData || labTestData?.length === 0) {
-        return res.status(404).json({ message: "No Data Found" });
+        return res.status(404).json({ message: "No Data Found", data: [] });
       }
-      return res
-        .status(200)
-        .json({ message: "Data Fetch Successfully", data: labTestData });
+      return res.status(200).json({
+        message: "Data Fetch Successfully",
+        data: labTestData,
+        nurse: nurseName?.[0],
+      });
     } catch (error) {
       res.status(500).json("internal server error");
     }

@@ -398,9 +398,15 @@ Router.put(
       ICD,
       result,
       disease_Diagnose,
-      adviseDuringDischarge,
     } = req.body;
     try {
+      const medicineAdviseDuringDischarge = req.body
+        .medicineAdviseDuringDischarge
+        ? JSON.parse(req.body.medicineAdviseDuringDischarge)
+        : [];
+      const adviseDuringDischarge = req.body.adviseDuringDischarge
+        ? JSON.parse(req.body.adviseDuringDischarge)
+        : [];
       const updatedIPDDoctorDischargeDetails =
         await IPDDoctorDischargeDetailsModel.findOneAndUpdate(
           { ipdPatientRegId: id },
@@ -426,6 +432,9 @@ Router.put(
             adviseDuringDischarge: adviseDuringDischarge
               ? adviseDuringDischarge
               : IPDDoctorDischargeDetailsModel.adviseDuringDischarge,
+            medicineAdviseDuringDischarge: medicineAdviseDuringDischarge
+              ? medicineAdviseDuringDischarge
+              : IPDDoctorDischargeDetailsModel.medicineAdviseDuringDischarge,
           }
         );
 
