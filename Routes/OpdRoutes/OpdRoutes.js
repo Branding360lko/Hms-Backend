@@ -240,13 +240,11 @@ Router.get("/get-one-opd-data-opdPatientId/:Id", async (req, res) => {
       },
     ]);
     if (OpdData.length === 0) {
-      return res
-        .status(200)
-        .json({
-          message: "No OPD record",
-          data: [],
-          patientData: patientPersonalData,
-        });
+      return res.status(200).json({
+        message: "No OPD record",
+        data: [],
+        patientData: patientPersonalData,
+      });
     }
     if (!OpdData) {
       return res
@@ -267,8 +265,10 @@ Router.get("/get-one-opd-data-opdPatientId/:Id", async (req, res) => {
 
 Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
   const Id = req.params.Id;
+
   const { Symptoms, Note, test, medicine, isPatientsChecked, NextAppoiment } =
     req.body;
+  console.log(NextAppoiment);
   try {
     const opdData = await OPD.findByIdAndUpdate(
       { _id: Id },
@@ -289,7 +289,7 @@ Router.put("/update-one-Opd/:Id", upload.none(), async (req, res) => {
     if (!opdData) {
       res.status(403).json({ message: "Faild To Update Opd Data" });
     }
-    console.log(opdData);
+
     return res.status(200).json({ message: "Opd Data Updated Successfully" });
   } catch (error) {
     res.status(500).json({ message: "Something Went Wrong" });

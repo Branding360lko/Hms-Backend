@@ -1214,7 +1214,7 @@ Router.get(
           },
         },
       ]);
-      if (!labTestData || labTestData?.length === 0) {
+      if (!labTestData) {
         return res.status(404).json({ message: "No Data Found", data: [] });
       }
       return res.status(200).json({

@@ -176,6 +176,9 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
           patientName: "$patientDetails.patientName",
         },
       },
+      {
+        $sort: { createdAt: -1 },
+      },
     ])
       .skip(Page * limit)
       .limit(limit);
