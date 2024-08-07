@@ -5,6 +5,7 @@ require("../../DB/connection");
 
 const PatientModel = require("../../Models/PatientSchema/PatientSchema");
 const DoctorModel = require("../../Models/DoctorSchema/DoctorSchema");
+const NurseModel = require("../../Models/NurseSchema/NurseSchema");
 
 Router.get("/DropdownData-Patient", async (req, res) => {
   const { query } = req.query;
