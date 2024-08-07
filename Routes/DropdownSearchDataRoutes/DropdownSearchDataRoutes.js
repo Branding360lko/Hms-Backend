@@ -54,4 +54,28 @@ Router.get("/DropdownData-Doctor", async (req, res) => {
   }
 });
 
+Router.get("/DropdownData-Nurse", async (req, res) => {
+  const { query } = req.query;
+  try {
+    const nurseData = await NurseModel.aggregate([
+      {
+        $sort: { _id: -1 },
+      },
+      {
+        $match: { nurseId: { $regex: query, $options: "i" } },
+      },
+      {
+        $project: {
+          nurseId: 1,
+          nurseName: 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json(nurseData);
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
+
 module.exports = Router;
