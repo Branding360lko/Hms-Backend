@@ -154,7 +154,15 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
         $unwind: "$patientDetails",
       },
       {
-        $match: { "patientDetails.patientName": { $regex: searchRegex } },
+        $match: {
+          $or: [
+            { "patientDetails.patientName": { $regex: searchRegex } },
+            { "patientDetails.patientPhone": { $regex: searchRegex } },
+            { "patientDetails.patientPhone2": { $regex: searchRegex } },
+            { "patientDetails.patientId": { $regex: searchRegex } },
+            { "patientDetails.patientId": { $regex: "uhid" + searchRegex } },
+          ],
+        },
       },
       {
         $project: {
@@ -200,7 +208,15 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
         $unwind: "$patientDetails",
       },
       {
-        $match: { "patientDetails.patientName": { $regex: searchRegex } },
+        $match: {
+          $or: [
+            { "patientDetails.patientName": { $regex: searchRegex } },
+            { "patientDetails.patientPhone": { $regex: searchRegex } },
+            { "patientDetails.patientPhone2": { $regex: searchRegex } },
+            { "patientDetails.patientId": { $regex: searchRegex } },
+            { "patientDetails.patientId": { $regex: "uhid" + searchRegex } },
+          ],
+        },
       },
 
       {

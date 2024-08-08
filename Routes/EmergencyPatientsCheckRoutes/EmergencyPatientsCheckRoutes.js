@@ -809,6 +809,9 @@ Router.get(
               createdAt: 1,
               updatedAt: 1,
               PatientName: "$patientData.patientName",
+              patientPhone: "$patientData.patientPhone",
+              patientPhone2: "$patientData.patientPhone2",
+              patientUhid: "$patientData.patientId",
             },
           },
         ]);

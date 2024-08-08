@@ -94,6 +94,16 @@ router.get("/Doctor-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+router.get("/get-all-doctor", async (req, res) => {
+  try {
+    const Doctors = await DoctorModel.find();
+    if (Doctors) {
+      return res.status(200).json(Doctors);
+    }
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
 
 router.get("/Doctor-GET-ONE/:doctorId", async (req, res) => {
   const doctorId = req.params.doctorId;
@@ -221,6 +231,9 @@ router.get(
             IpdPatientNurseId: "$ipdNurseId",
             IpdPatientDischarge: "$ipdPatientDischarged",
             IpdPatientName: "$PatientData.patientName",
+            IpdPatientUhid: "$PatientData.patientId",
+            IpdPatientPhone: "$PatientData.patientPhone",
+            IpdPatientPhone2: "$PatientData.patientPhone2",
           },
         },
       ]);
@@ -347,6 +360,9 @@ router.get(
             updatedAt: 1,
             doctorName: "$doctorData.doctorName",
             PatientName: "$PatientData.patientName",
+            patientPhone: "$PatientData.patientPhone",
+            patientPhone2: "$PatientData.patientPhone2",
+            patientUhid: "$PatientData.patientId",
           },
         },
         // {
@@ -721,12 +737,10 @@ router.get("/get-doctor-name/:doctorId", async (req, res) => {
     if (!doctorname || doctorname?.length === 0) {
       return res.status(403).json({ message: "no data found" });
     }
-    return res
-      .status(200)
-      .json({
-        message: "Data Fetch Successfully",
-        data: doctorname?.[0]?.doctorName,
-      });
+    return res.status(200).json({
+      message: "Data Fetch Successfully",
+      data: doctorname?.[0]?.doctorName,
+    });
   } catch (error) {
     return res.status(500).json("internal server error");
   }
