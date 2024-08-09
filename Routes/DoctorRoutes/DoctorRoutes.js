@@ -464,6 +464,9 @@ router.get(
             EmergencyPatientCreatedTime: "$updatedAt",
             EmergencyPatientMainId: "$mainId",
             EmergencyPatientName: "$patientData.patientName",
+            EmergencyPatientPhone: "$patientData.patientPhone",
+            EmergencyPatientPhone2: "$patientData.patientPhone2",
+            EmergencyPatientUhid: "$patientData.patientId",
           },
         },
       ]);
