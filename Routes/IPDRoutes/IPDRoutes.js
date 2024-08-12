@@ -134,8 +134,6 @@ Router.get("/All-Ipd-Routes", async (req, res) => {
 
 Router.post("/IPD-Create", upload.none(), async (req, res) => {
   const {
-    medicine,
-    test,
     Symptoms,
     Note,
     ipdPatientData,
@@ -171,6 +169,56 @@ Router.post("/IPD-Create", upload.none(), async (req, res) => {
       VisitDateTime,
       ReferedDoctorId,
       AdditionalDoctorId,
+      ipdPatientMainId,
+      ipdPatientCurrentBed,
+      submittedBy,
+    });
+    const ipdData = await IPD.findById(ipd?._id);
+
+    if (!ipdData) {
+      res.status(500).json("Something went wrong while Saving the IPD Data");
+    }
+
+    return res
+      .status(201)
+      .json({ message: "Data Created Successfully", data: ipdData });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "internal Server Error" });
+  }
+});
+Router.post("/IPD-create-medicine-lab", upload.none(), async (req, res) => {
+  const {
+    Symptoms,
+    Note,
+    ipdPatientData,
+    isPatientsChecked,
+    VisitDateTime,
+    ipdPatientMainId,
+    ipdPatientCurrentBed,
+    submittedBy,
+  } = req.body;
+
+  try {
+    const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
+    const test = req.body.test ? JSON.parse(req.body.test) : [];
+    const ipd = await IPD.create({
+      Note,
+      Symptoms,
+      medicine: medicine.map((med) => ({
+        Name: med.name,
+        Quantity: med.quantity,
+        Price: med.total,
+      })),
+      test: test.map((tst) => ({
+        Name: tst.name,
+        Quantity: tst.quantity,
+        Price: tst.total,
+      })),
+      ipdPatientData,
+      isPatientsChecked,
+
+      VisitDateTime,
       ipdPatientMainId,
       ipdPatientCurrentBed,
       submittedBy,

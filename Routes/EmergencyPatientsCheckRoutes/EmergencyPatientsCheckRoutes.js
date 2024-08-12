@@ -100,6 +100,62 @@ Router.post(
     }
   }
 );
+Router.post(
+  "/add-EmergencyPatientMedicineLab-Routes",
+  upload.none(),
+  async (req, res) => {
+    const {
+      Symptoms,
+      Note,
+      EmergencyPatientData,
+      isPatientsChecked,
+      VisitDateTime,
+      mainId,
+      emergencyPatientCurrentBed,
+    } = req.body;
+
+    try {
+      const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
+      const test = req.body.test ? JSON.parse(req.body.test) : [];
+
+      const emergency = await EmergencyPatientsCheck.create({
+        Note,
+        Symptoms,
+        medicine: medicine.map((med) => ({
+          Name: med.name,
+          Quantity: med.quantity,
+          Price: med.total,
+        })),
+        test: test.map((tst) => ({
+          Name: tst.name,
+          Quantity: tst.quantity,
+          Price: tst.total,
+        })),
+        EmergencyPatientData,
+        isPatientsChecked,
+
+        VisitDateTime,
+        mainId,
+        emergencyPatientCurrentBed,
+      });
+      const emergencyData = await EmergencyPatientsCheck.findById(
+        emergency?._id
+      );
+
+      if (!emergencyData) {
+        res
+          .status(500)
+          .json("Something went wrong while Saving the Emergency Data");
+      }
+
+      return res
+        .status(201)
+        .json({ message: "Data Created Successfully", data: emergencyData });
+    } catch (error) {
+      res.status(500).json({ message: "internal Server Error" });
+    }
+  }
+);
 Router.get("/get-one-EmergencyPatientsChecks/:Id", async (req, res) => {
   const Id = req.params.Id;
 
