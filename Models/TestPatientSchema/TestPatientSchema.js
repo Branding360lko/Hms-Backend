@@ -24,6 +24,9 @@ const TestPatientSchema = new Schema(
       type: String,
       required: true,
     },
+    notes: {
+      type: String,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

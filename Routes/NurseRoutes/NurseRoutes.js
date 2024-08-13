@@ -70,10 +70,100 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 Router.get("/Nurse-GET-ALL", async (req, res) => {
-  try {
-    const nurses = await NurseModel.find();
+  const {
+    nurseIdForSearching = "",
+    nurseNameForSearching = "",
+    nurseMobileNoForSearching = "",
+    page = 1,
+    limit,
+  } = req.query;
 
-    return res.status(200).json(nurses);
+  try {
+    const skip = (Number(page) - 1) * Number(limit);
+
+    if (limit) {
+      const nurses = await NurseModel.aggregate([
+        {
+          $sort: { _id: -1 },
+        },
+        {
+          $addFields: {
+            nursePhoneNumberAsString: {
+              $toString: "$nursePhone",
+            },
+          },
+        },
+        {
+          $match: { nurseId: { $regex: nurseIdForSearching, $options: "i" } },
+        },
+        {
+          $match: {
+            nurseName: { $regex: nurseNameForSearching, $options: "i" },
+          },
+        },
+        {
+          $match: {
+            nursePhoneNumberAsString: {
+              $regex: nurseMobileNoForSearching,
+              $options: "i",
+            },
+          },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: Number(limit),
+        },
+      ]);
+      // const nurses = await NurseModel.find();
+      let totalNurses = await NurseModel.countDocuments();
+
+      if (nurseIdForSearching !== "") {
+        totalNurses = await NurseModel.countDocuments({
+          nurseId: { $regex: nurseIdForSearching, $options: "i" },
+        });
+      } else if (nurseNameForSearching !== "") {
+        totalNurses = await NurseModel.countDocuments({
+          nurseName: { $regex: nurseNameForSearching, $options: "i" },
+        });
+      } else if (nurseMobileNoForSearching !== "") {
+        const totalNursesData = await NurseModel.aggregate([
+          {
+            $addFields: {
+              nursePhoneNumberAsString: {
+                $toString: "$nursePhone",
+              },
+            },
+          },
+          {
+            $match: {
+              nursePhoneNumberAsString: {
+                $regex: nurseMobileNoForSearching,
+                $options: "i",
+              },
+            },
+          },
+          {
+            $count: "nurseCount",
+          },
+        ]);
+        totalNurses = totalNursesData[0].nurseCount;
+      }
+
+      return res.status(200).json({
+        nurses,
+        totalNurses,
+        totalPages: Math.ceil(Number(totalNurses) / Number(limit)),
+        currentPage: Number(page),
+      });
+    } else if (!limit) {
+      const allNurses = await NurseModel.find();
+
+      if (allNurses) {
+        res.status(200).json(allNurses);
+      }
+    }
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }

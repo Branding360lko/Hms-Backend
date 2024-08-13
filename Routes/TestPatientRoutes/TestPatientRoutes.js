@@ -23,8 +23,74 @@ const generateUniqueId = () => {
 };
 
 Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
+  const {
+    patientNameForSearch = "",
+    patientUHIDforSearch = "",
+    testNameForSearch = "",
+    mobileNumberForSearch = "",
+    page = 1,
+    limit = 10,
+  } = req.query;
+
   try {
-    const testPatients = await TestPatientModel.find();
+    const skip = (Number(page) - 1) * Number(limit);
+    const testPatients = await TestPatientModel.aggregate([
+      {
+        $sort: { _id: -1 },
+      },
+      {
+        $addFields: {
+          testId: {
+            $toObjectId: "$test",
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "testPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "prescribedByDoctor",
+          foreignField: "doctorId",
+          as: "doctorData",
+        },
+      },
+      {
+        $lookup: {
+          from: "tests",
+          localField: "testId",
+          foreignField: "_id",
+          as: "testData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$patientData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$doctorData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$testData",
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: Number(limit),
+      },
+    ]);
     return res.status(200).json(testPatients);
   } catch (error) {
     res.status(500).json("Internal Server Error");
@@ -49,7 +115,8 @@ Router.get("/TestOfPatient-GET-ONE/:ID", async (req, res) => {
 });
 
 Router.post("/TestOfPatient-POST", async (req, res) => {
-  const { testPatientId, prescribedByDoctor, test, patientType } = req.body;
+  const { testPatientId, prescribedByDoctor, test, patientType, notes } =
+    req.body;
   try {
     const newTestPatient = new TestPatientModel({
       mainId: "TP-" + generateUniqueId(),
@@ -57,6 +124,7 @@ Router.post("/TestOfPatient-POST", async (req, res) => {
       prescribedByDoctor: prescribedByDoctor,
       test: test,
       patientType: patientType,
+      notes: notes,
     });
 
     // console.log(newTestPatient);
@@ -74,7 +142,8 @@ Router.post("/TestOfPatient-POST", async (req, res) => {
 
 Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
   const id = req.params.ID;
-  const { testPatientId, prescribedByDoctor, test, patientType } = req.body;
+  const { testPatientId, prescribedByDoctor, test, patientType, notes } =
+    req.body;
 
   try {
     const updatedTestPatient = await TestPatientModel.findOneAndUpdate(
@@ -88,6 +157,7 @@ Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
           : TestPatientModel.prescribedByDoctor,
         test: test ? test : TestPatientModel.test,
         patientType: patientType ? patientType : TestPatientModel.patientType,
+        notes: notes ? notes : TestPatientModel.notes,
       }
     );
 

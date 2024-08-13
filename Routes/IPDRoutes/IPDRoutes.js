@@ -81,6 +81,11 @@ Router.get("/ipd-patients/:DoctorId", async (req, res) => {
       },
       { $unwind: "$doctorData" },
       {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
         $project: {
           _id: "$doctorData._id",
           mainId: 1,

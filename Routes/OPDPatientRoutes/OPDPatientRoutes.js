@@ -43,10 +43,171 @@ const generateUniqueId = async () => {
 };
 
 Router.get("/OPDPatient-GET-ALL", async (req, res) => {
+  const {
+    opdPatientId = "",
+    patientName = "",
+    patientMobileNumber = "",
+    page = 1,
+    limit,
+  } = req.query;
   try {
-    const OPDPatientData = await OPDPatientModel.find();
+    const skip = (Number(page) - 1) * Number(limit);
 
-    res.status(200).json(OPDPatientData);
+    const OPDPatientData = await OPDPatientModel.aggregate([
+      {
+        $sort: { _id: -1 },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "opdDoctorId",
+          foreignField: "doctorId",
+          as: "doctorData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "opdDoctorId",
+          foreignField: "doctorId",
+          as: "doctorProfessionalData",
+        },
+      },
+      {
+        $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $unwind: { path: "$doctorData", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $unwind: {
+          path: "$doctorProfessionalData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          patientName: "$patientData.patientName",
+          patientPhone: "$patientData.patientPhone",
+        },
+      },
+      {
+        $match: { opdPatientId: { $regex: opdPatientId, $options: "i" } },
+      },
+      {
+        $match: { patientName: { $regex: patientName, $options: "i" } },
+      },
+      {
+        $match: {
+          patientPhone: { $regex: patientMobileNumber, $options: "i" },
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: Number(limit),
+      },
+    ]);
+    // const OPDPatientData = await OPDPatientModel.find();
+
+    let totalOPDPatient = await OPDPatientModel.countDocuments();
+    if (opdPatientId !== "") {
+      totalOPDPatient = await OPDPatientModel.countDocuments({
+        opdPatientId: { $regex: opdPatientId, $options: "i" },
+      });
+    } else if (patientName !== "") {
+      const totalOPDPatientCounts = await OPDPatientModel.aggregate([
+        {
+          $lookup: {
+            from: "patients",
+            localField: "opdPatientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        {
+          $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            patientName: "$patientData.patientName",
+          },
+        },
+        {
+          $match: { patientName: { $regex: patientName, $options: "i" } },
+        },
+        {
+          $count: "patientName",
+        },
+      ]);
+      totalOPDPatient = totalOPDPatientCounts[0].patientName;
+    } else if (patientMobileNumber !== "") {
+      const totalOPDPatientCounts = await OPDPatientModel.aggregate([
+        {
+          $lookup: {
+            from: "patients",
+            localField: "opdPatientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        {
+          $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            patientPhone: "$patientData.patientPhone",
+          },
+        },
+        {
+          $match: {
+            patientPhone: { $regex: patientMobileNumber, $options: "i" },
+          },
+        },
+        {
+          $count: "patientPhone",
+        },
+      ]);
+      totalOPDPatient = totalOPDPatientCounts[0].patientPhone;
+    }
+
+    // const totalOPDPatients = await OPDPatientModel.countDocuments({
+    //   opdPatientId: { $regex: opdPatientId, $options: "i" },
+    // });
+
+    res.status(200).json({
+      OPDPatientData,
+      totalOPDPatient,
+      totalPages: Math.ceil(Number(totalOPDPatient) / Number(limit)),
+      currentPage: Number(page),
+    });
+  } catch (error) {
+    res.status(500).json("Internal Server Error");
+  }
+});
+
+Router.get("/OPDPatient-GET-ONE/:Id", async (req, res) => {
+  const id = req.params.Id;
+
+  try {
+    const OPDPatientData = await OPDPatientModel.findOne({
+      mainId: id,
+    });
+
+    if (!OPDPatientData) {
+      return res.status(404).json("Patient Not Found");
+    }
+
+    return res.status(200).json(OPDPatientData);
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }

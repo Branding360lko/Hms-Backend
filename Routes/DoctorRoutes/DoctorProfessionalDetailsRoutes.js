@@ -21,12 +21,85 @@ const generateUniqueId = () => {
 };
 
 Router.get("/DoctorProfDetails-GET-ALL", async (req, res) => {
+  const {
+    // doctorNameForSearch = "",
+    // doctorMobileNumberForSearch = "",
+    doctorIdForSearch = "",
+    page = 1,
+    limit,
+  } = req.query;
   try {
-    const DoctorProfDetails = await DoctorProfessionalDetailsModel.find();
+    const skip = (Number(page) - 1) * Number(limit);
 
-    if (DoctorProfDetails) {
-      return res.status(200).json(DoctorProfDetails);
+    if (limit) {
+      const DoctorProfDetails = await DoctorProfessionalDetailsModel.aggregate([
+        {
+          $sort: { _id: -1 },
+        },
+        {
+          $lookup: {
+            from: "doctors",
+            localField: "doctorId",
+            foreignField: "doctorId",
+            as: "doctorData",
+          },
+        },
+        {
+          $unwind: { path: "$doctorData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            doctorName: "$doctorData.doctorName",
+          },
+        },
+        {
+          $match: { doctorId: { $regex: doctorIdForSearch, $options: "i" } },
+        },
+        // {
+        //   $match: { doctorName: { $regex: doctorNameForSearch, $options: "i" } },
+        // },
+        // {
+        //   $match: {
+        //     doctorPhone: { $regex: doctorMobileNumberForSearch, $options: "i" },
+        //   },
+        // },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: Number(limit),
+        },
+      ]);
+      // const DoctorProfDetails = await DoctorProfessionalDetailsModel.find();
+
+      let totalDoctorProfDetails =
+        await DoctorProfessionalDetailsModel.countDocuments();
+
+      if (doctorIdForSearch !== "") {
+        totalDoctorProfDetails =
+          await DoctorProfessionalDetailsModel.countDocuments({
+            doctorId: { $regex: doctorIdForSearch, $options: "i" },
+          });
+      }
+
+      return res.status(200).json({
+        DoctorProfDetails,
+        totalDoctorProfDetails,
+        totalPages: Math.ceil(Number(totalDoctorProfDetails) / Number(limit)),
+        currentPage: Number(page),
+      });
+    } else if (!limit) {
+      const allDoctorProfessionalDetails =
+        await DoctorProfessionalDetailsModel.find();
+
+      if (allDoctorProfessionalDetails) {
+        return res.status(200).json(allDoctorProfessionalDetails);
+      }
     }
+
+    // if (DoctorProfDetails) {
+    //   return res.status(200).json(DoctorProfDetails);
+    // }
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }
@@ -73,7 +146,20 @@ Router.get(
 );
 
 Router.post("/DoctorProfDetails-POST", async (req, res) => {
-  const { doctorId, doctorFee, doctorDesignation, doctorDepartment } = req.body;
+  const {
+    doctorId,
+    doctorFee,
+    doctorDesignation,
+    doctorDepartment,
+    doctorOPDFee,
+    doctorGereralHighFee,
+    doctorGereralJanataFee,
+    doctorSemiPrivateFee,
+    doctorPrivateSingleAcFee,
+    doctorPrivateSingleAcDlxFee,
+    doctorPrivateSuiteFee,
+    doctorEmergencyFee,
+  } = req.body;
 
   try {
     if (!doctorId || !doctorFee || !doctorDesignation || !doctorDepartment) {
@@ -96,6 +182,14 @@ Router.post("/DoctorProfDetails-POST", async (req, res) => {
       doctorFee: doctorFee,
       doctorDepartment: doctorDepartment,
       doctorDesignation: doctorDesignation,
+      doctorOPDFee: doctorOPDFee,
+      doctorGereralHighFee: doctorGereralHighFee,
+      doctorGereralJanataFee: doctorGereralJanataFee,
+      doctorSemiPrivateFee: doctorSemiPrivateFee,
+      doctorPrivateSingleAcFee: doctorPrivateSingleAcFee,
+      doctorPrivateSingleAcDlxFee: doctorPrivateSingleAcDlxFee,
+      doctorPrivateSuiteFee: doctorPrivateSuiteFee,
+      doctorEmergencyFee: doctorEmergencyFee,
     });
 
     return await DoctorProfDetails.save().then((data) =>
@@ -111,7 +205,19 @@ Router.post("/DoctorProfDetails-POST", async (req, res) => {
 
 Router.put("/DoctorProfDetails-PUT/:doctorId", async (req, res) => {
   const doctorId = req.params.doctorId;
-  const { doctorFee, doctorDesignation, doctorDepartment } = req.body;
+  const {
+    doctorFee,
+    doctorDesignation,
+    doctorDepartment,
+    doctorOPDFee,
+    doctorGereralHighFee,
+    doctorGereralJanataFee,
+    doctorSemiPrivateFee,
+    doctorPrivateSingleAcFee,
+    doctorPrivateSingleAcDlxFee,
+    doctorPrivateSuiteFee,
+    doctorEmergencyFee,
+  } = req.body;
   try {
     const DoctorProfDetails =
       await DoctorProfessionalDetailsModel.findOneAndUpdate(
@@ -126,6 +232,30 @@ Router.put("/DoctorProfDetails-PUT/:doctorId", async (req, res) => {
           doctorDepartment: doctorDepartment
             ? doctorDepartment
             : DoctorProfessionalDetailsModel.doctorDepartment,
+          doctorOPDFee: doctorOPDFee
+            ? doctorOPDFee
+            : DoctorProfessionalDetailsModel.doctorOPDFee,
+          doctorGereralHighFee: doctorGereralHighFee
+            ? doctorGereralHighFee
+            : DoctorProfessionalDetailsModel.doctorGereralHighFee,
+          doctorGereralJanataFee: doctorGereralJanataFee
+            ? doctorGereralJanataFee
+            : DoctorProfessionalDetailsModel.doctorGereralJanataFee,
+          doctorSemiPrivateFee: doctorSemiPrivateFee
+            ? doctorSemiPrivateFee
+            : DoctorProfessionalDetailsModel.doctorSemiPrivateFee,
+          doctorPrivateSingleAcFee: doctorPrivateSingleAcFee
+            ? doctorPrivateSingleAcFee
+            : DoctorProfessionalDetailsModel.doctorPrivateSingleAcFee,
+          doctorPrivateSingleAcDlxFee: doctorPrivateSingleAcDlxFee
+            ? doctorPrivateSingleAcDlxFee
+            : DoctorProfessionalDetailsModel.doctorPrivateSingleAcDlxFee,
+          doctorPrivateSuiteFee: doctorPrivateSuiteFee
+            ? doctorPrivateSuiteFee
+            : DoctorProfessionalDetailsModel.doctorPrivateSuiteFee,
+          doctorEmergencyFee: doctorEmergencyFee
+            ? doctorEmergencyFee
+            : DoctorProfessionalDetailsModel.doctorEmergencyFee,
         }
       );
 

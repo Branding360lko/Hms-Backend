@@ -14,8 +14,8 @@ require("../../DB/connection");
 
 const DoctorModel = require("../../Models/DoctorSchema/DoctorSchema");
 const DoctorProfessionalDetailsModel = require("../../Models/DoctorSchema/DoctorProfessionalDetailsSchema");
-const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
 const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
+const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
 
 // const generateUniqueId = () => {
 //   const date = new Date();
@@ -85,12 +85,114 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 router.get("/Doctor-GET-ALL", async (req, res) => {
+  const {
+    doctorNameForSearch = "",
+    doctorMobileNumberForSearch = "",
+    doctorIdForSearch = "",
+    page = 1,
+    limit,
+  } = req.query;
+
+  // console.log(query, page, limit);
   try {
-    const Doctors = await DoctorModel.find();
-    if (Doctors) {
-      return res.status(200).json(Doctors);
+    const skip = (Number(page) - 1) * Number(limit);
+
+    if (limit) {
+      const Doctors = await DoctorModel.aggregate([
+        {
+          $sort: { _id: -1 },
+        },
+        {
+          $addFields: {
+            phoneNumberAsString: {
+              $toString: "$doctorPhone",
+            },
+          },
+        },
+        {
+          $match: { doctorId: { $regex: doctorIdForSearch, $options: "i" } },
+        },
+        {
+          $match: {
+            doctorName: { $regex: doctorNameForSearch, $options: "i" },
+          },
+        },
+        {
+          $match: {
+            phoneNumberAsString: {
+              $regex: doctorMobileNumberForSearch,
+              $options: "i",
+            },
+          },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: Number(limit),
+        },
+      ]);
+      // const Doctors = await DoctorModel.find();
+      // if (Doctors) {
+      //   return res.status(200).json(Doctors);
+      // }
+
+      let totalDoctor = await DoctorModel.countDocuments();
+      if (doctorNameForSearch !== "") {
+        totalDoctor = await DoctorModel.countDocuments({
+          doctorName: { $regex: doctorNameForSearch, $options: "i" },
+        });
+      } else if (doctorIdForSearch !== "") {
+        totalDoctor = await DoctorModel.countDocuments({
+          doctorId: { $regex: doctorIdForSearch, $options: "i" },
+        });
+      } else if (doctorMobileNumberForSearch !== "") {
+        // totalDoctor = await DoctorModel.countDocuments({
+        //   doctorPhone: {
+        //     $regex: Number(doctorMobileNumberForSearch),
+        //     $options: "i",
+        //   },
+        // });
+        const totalDoctorData = await DoctorModel.aggregate([
+          {
+            $addFields: {
+              phoneNumberAsString: {
+                $toString: "$doctorPhone",
+              },
+            },
+          },
+          {
+            $match: {
+              phoneNumberAsString: {
+                $regex: doctorMobileNumberForSearch,
+                $options: "i",
+              },
+            },
+          },
+          {
+            $count: "totalDoctors",
+          },
+        ]);
+
+        totalDoctor = totalDoctorData[0]?.totalDoctors;
+      }
+
+      return res.status(200).json({
+        Doctors,
+        totalDoctor,
+        totalPages: Math.ceil(Number(totalDoctor) / Number(limit)),
+        currentPage: Number(page),
+      });
+    } else if (!limit) {
+      const allDoctors = await DoctorModel.find();
+
+      if (allDoctors) {
+        return res.status(200).json(allDoctors);
+      }
     }
   } catch (error) {
+    // console.log(error);
+
     res.status(500).json("Internal Server Error");
   }
 });
@@ -104,7 +206,6 @@ router.get("/get-all-doctor", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-
 router.get("/Doctor-GET-ONE/:doctorId", async (req, res) => {
   const doctorId = req.params.doctorId;
   try {

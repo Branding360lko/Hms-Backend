@@ -84,11 +84,93 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 router.get("/Patient-GET-ALL", async (req, res) => {
+  const {
+    patientUHIDforSearch = "",
+    patientNameForSearch = "",
+    patientMobileNumberForSearch = "",
+    page = 1,
+    limit,
+  } = req.query;
+
   try {
-    const Patients = await PatientModel.find();
-    if (Patients) {
-      return res.status(200).json(Patients);
+    const skip = (Number(page) - 1) * Number(limit);
+    // const Patients = await PatientModel.find({
+    //   patientName: { $regex: query, $options: "i" }, // Example search condition
+    // })
+    //   .skip(skip)
+    //   .limit(Number(limit));
+
+    // // const Patients = await PatientModel.find().skip(skip).limit(Number(limit));
+
+    // // const totalPatient = await PatientModel.countDocuments();
+    // const totalPatient = await PatientModel.countDocuments({
+    //   patientName: { $regex: query, $options: "i" },
+    // });
+
+    if (limit) {
+      const Patients = await PatientModel.aggregate([
+        {
+          $sort: { _id: -1 },
+        },
+        {
+          $match: {
+            patientId: { $regex: patientUHIDforSearch, $options: "i" },
+          },
+        },
+        {
+          $match: {
+            patientName: { $regex: patientNameForSearch, $options: "i" },
+          },
+        },
+        {
+          $match: {
+            patientPhone: {
+              $regex: patientMobileNumberForSearch,
+              $options: "i",
+            },
+          },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: Number(limit),
+        },
+      ]);
+
+      let totalPatient = await PatientModel.countDocuments();
+
+      if (patientUHIDforSearch !== "") {
+        totalPatient = await PatientModel.countDocuments({
+          patientId: { $regex: patientUHIDforSearch, $options: "i" },
+        });
+      } else if (patientNameForSearch !== "") {
+        totalPatient = await PatientModel.countDocuments({
+          patientName: { $regex: patientNameForSearch, $options: "i" },
+        });
+      } else if (patientMobileNumberForSearch !== "") {
+        totalPatient = await PatientModel.countDocuments({
+          patientPhone: { $regex: patientMobileNumberForSearch, $options: "i" },
+        });
+      }
+
+      return res.status(200).json({
+        Patients,
+        totalPatient,
+        totalPages: Math.ceil(Number(totalPatient) / Number(limit)),
+        currentPage: Number(page),
+      });
+    } else if (!limit) {
+      const allPatient = await PatientModel.find();
+
+      if (allPatient) {
+        return res.status(200).json(allPatient);
+      }
     }
+
+    // if (Patients) {
+    //   return res.status(200).json(Patients);
+    // }
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -116,8 +198,10 @@ router.post(
     const {
       patientName,
       patientEmail,
+      relativeCategory,
       patientFatherName,
       patientHusbandName,
+      patientCareOfName,
       patientDateOfBirth,
       patientAge,
       patientPhone,
@@ -131,21 +215,24 @@ router.post(
       patientPermanentAddress,
       patientCity,
       patientState,
+      patientCityNew,
+      patientStateNew,
       patientCountry,
       patientZipCode,
       createdBy,
       editedBy,
     } = req.body;
 
-    // if (
-    //   !patientName ||
-    //   !patientEmail ||
-    //   !patientDateOfBirth ||
-    //   !patientPhone ||
-    //   !patientGender
-    // ) {
-    //   res.status(422).json({ error: "Please fill the field completely!" });
-    // }
+    if (
+      // !patientName ||
+      // !patientEmail ||
+      // !patientDateOfBirth ||
+      !patientPhone
+      // ||
+      // !patientGender
+    ) {
+      res.status(422).json({ error: "Patient Phone is required!" });
+    }
 
     try {
       const patientImage = req.file ? req.file.filename : "";
@@ -159,22 +246,24 @@ router.post(
       //     .json({ error: "Patient Already Exists With Same Email ID" });
       // }
 
-      // const patientExistWithPhone = await PatientModel.findOne({
-      //   patientPhone: patientPhone,
-      // });
+      const patientExistWithPhone = await PatientModel.findOne({
+        patientPhone: patientPhone,
+      });
 
-      // if (patientExistWithPhone) {
-      //   return res
-      //     .status(422)
-      //     .json({ error: "Patient Already Exists With Same Mobile Number" });
-      // }
+      if (patientExistWithPhone) {
+        return res
+          .status(422)
+          .json({ error: "Patient Already Exists With Same Mobile Number" });
+      }
 
       const newPatient = new PatientModel({
         patientId: await generateUniqueId(),
         patientName: patientName,
         patientEmail: patientEmail,
+        relativeCategory: relativeCategory,
         patientFatherName: patientFatherName,
         patientHusbandName: patientHusbandName,
+        patientCareOfName: patientCareOfName,
         patientDateOfBirth: patientDateOfBirth,
         patientAge: patientAge,
         patientPhone: patientPhone,
@@ -188,6 +277,8 @@ router.post(
         patientPermanentAddress: patientPermanentAddress,
         patientCity: patientCity,
         patientState: patientState,
+        patientCityNew: patientCityNew,
+        patientStateNew: patientStateNew,
         patientCountry: patientCountry,
         patientZipCode: patientZipCode,
         createdBy: createdBy,
@@ -216,8 +307,10 @@ router.put(
       patientId,
       patientName,
       patientEmail,
+      relativeCategory,
       patientFatherName,
       patientHusbandName,
+      patientCareOfName,
       patientDateOfBirth,
       patientAge,
       patientPhone,
@@ -231,6 +324,8 @@ router.put(
       patientPermanentAddress,
       patientCity,
       patientState,
+      patientCityNew,
+      patientStateNew,
       patientCountry,
       patientZipCode,
       editedBy,
@@ -239,20 +334,26 @@ router.put(
     try {
       const patientImage = req.file ? req.file.filename : "";
 
-      // const patientExistWithEmail = await PatientModel.findOne({
-      //   patientEmail: patientEmail,
-      // });
-      // const patientExistWithId = await PatientModel.findOne({
-      //   patientId: PatientId,
-      // });
-      // if (
-      //   patientExistWithEmail.doctorEmail &&
-      //   patientExistWithEmail.doctorEmail !== patientExistWithId.doctorEmail
-      // ) {
-      //   return res
-      //     .status(422)
-      //     .json({ error: "Patient Already Exists With Same Email ID" });
-      // }
+      // console.log(patientPhone);
+
+      const patientExistWithPhone = await PatientModel.findOne({
+        patientPhone: patientPhone,
+      });
+
+      const patientExistWithId = await PatientModel.findOne({
+        patientId: PatientId,
+      });
+
+      if (patientExistWithPhone && patientExistWithId) {
+        if (
+          patientExistWithPhone.patientPhone &&
+          patientExistWithPhone.patientPhone !== patientExistWithId.patientPhone
+        ) {
+          return res
+            .status(422)
+            .json({ error: "Patient Already Exists With Same Phone Number" });
+        }
+      }
 
       if (patientImage !== "") {
         const filePath = path.dirname(
@@ -285,12 +386,13 @@ router.put(
           patientId: patientId ? patientId : PatientModel.patientId,
           patientName: patientName ? patientName : PatientModel.patientName,
           patientEmail: patientEmail ? patientEmail : PatientModel.patientEmail,
-          patientFatherName: patientFatherName
-            ? patientFatherName
-            : PatientModel.patientFatherName,
-          patientHusbandName: patientHusbandName
-            ? patientHusbandName
-            : PatientModel.patientHusbandName,
+          relativeCategory: relativeCategory
+            ? relativeCategory
+            : PatientModel.relativeCategory,
+          patientCareOfName: patientCareOfName,
+          patientFatherName: patientFatherName,
+          patientHusbandName: patientHusbandName,
+
           patientDateOfBirth: patientDateOfBirth
             ? patientDateOfBirth
             : PatientModel.patientDateOfBirth,
@@ -319,6 +421,12 @@ router.put(
             : PatientModel.patientPermanentAddress,
           patientCity: patientCity ? patientCity : PatientModel.patientCity,
           patientState: patientState ? patientState : PatientModel.patientState,
+          patientCityNew: patientCityNew
+            ? patientCityNew
+            : PatientModel.patientCityNew,
+          patientStateNew: patientStateNew
+            ? patientStateNew
+            : PatientModel.patientStateNew,
           patientCountry: patientCountry
             ? patientCountry
             : PatientModel.patientCountry,
@@ -343,6 +451,7 @@ router.put(
 
       return res.status(200).json({ message: "Patient Updated successfully" });
     } catch (error) {
+      console.log(error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }

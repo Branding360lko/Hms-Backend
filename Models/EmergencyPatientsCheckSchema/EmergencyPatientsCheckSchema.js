@@ -58,28 +58,10 @@ const EmergencyPatientsCheckSchema = new Schema(
     doctorId: {
       type: Schema.Types.ObjectId,
       ref: "doctors",
-      default: null,
-    },
-    additionalDoctorId: {
-      type: Schema.Types.ObjectId,
-      ref: "doctors",
-      default: null,
-    },
-    emergencyPatientCurrentBed: {
-      type: String,
     },
     VisitDateTime: {
       type: String,
       require: true,
-    },
-    discharge: {
-      type: Boolean,
-      require: true,
-      default: false,
-    },
-    submittedBy: {
-      type: String,
-      default: "Assigned Doctor",
     },
   },
   { timestamps: true }
