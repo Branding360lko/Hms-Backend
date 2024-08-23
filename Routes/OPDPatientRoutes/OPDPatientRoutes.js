@@ -53,7 +53,8 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
   try {
     const skip = (Number(page) - 1) * Number(limit);
 
-    const OPDPatientData = await OPDPatientModel.aggregate([
+    let OPDPatientData = [];
+    await OPDPatientModel.aggregate([
       {
         $sort: { _id: -1 },
       },
@@ -116,7 +117,15 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
       {
         $limit: Number(limit),
       },
-    ]);
+    ])
+      .then((d) => {
+        OPDPatientData = d;
+      })
+      .catch(() => {
+        if (error) {
+          OPDPatientData = [];
+        }
+      });
     // const OPDPatientData = await OPDPatientModel.find();
 
     let totalOPDPatient = await OPDPatientModel.countDocuments();
@@ -146,10 +155,16 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
           $match: { patientName: { $regex: patientName, $options: "i" } },
         },
         {
-          $count: "patientName",
+          $count: "patientCount",
         },
-      ]);
-      totalOPDPatient = totalOPDPatientCounts[0].patientName;
+      ])
+        .then((d) => {
+          totalOPDPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalOPDPatient = 0;
+        });
+      // totalOPDPatient = totalOPDPatientCounts[0].patientName;
     } else if (patientMobileNumber !== "") {
       const totalOPDPatientCounts = await OPDPatientModel.aggregate([
         {
@@ -174,10 +189,16 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
           },
         },
         {
-          $count: "patientPhone",
+          $count: "patientCount",
         },
-      ]);
-      totalOPDPatient = totalOPDPatientCounts[0].patientPhone;
+      ])
+        .then((d) => {
+          totalOPDPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalOPDPatient = 0;
+        });
+      // totalOPDPatient = totalOPDPatientCounts[0].patientPhone;
     }
 
     // const totalOPDPatients = await OPDPatientModel.countDocuments({
@@ -194,7 +215,6 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-
 Router.get("/OPDPatient-GET-ONE/:Id", async (req, res) => {
   const id = req.params.Id;
 
