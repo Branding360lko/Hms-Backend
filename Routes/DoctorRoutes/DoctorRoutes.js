@@ -604,9 +604,17 @@ router.post("/Doctor-POST", upload.single("doctorImage"), async (req, res) => {
     doctorCountry,
     doctorZipCode,
     // Doc Prof Details
-    doctorFee,
     doctorDesignation,
     doctorDepartment,
+    doctorFee,
+    doctorOPDFee,
+    doctorGereralHighFee,
+    doctorGereralJanataFee,
+    doctorSemiPrivateFee,
+    doctorPrivateSingleAcFee,
+    doctorPrivateSingleAcDlxFee,
+    doctorPrivateSuiteFee,
+    doctorEmergencyFee,
   } = req.body;
 
   // console.log(req.body);
@@ -646,11 +654,19 @@ router.post("/Doctor-POST", upload.single("doctorImage"), async (req, res) => {
 
     if (doctor) {
       const doctorProfDetails = new DoctorProfessionalDetailsModel({
-        DoctorProfessionalDetailsId: "DPD" + generateUniqueId(),
+        DoctorProfessionalDetailsId: "DPD" + (await generateUniqueId()),
         doctorId: doctor.doctorId,
         doctorFee: doctorFee,
         doctorDesignation: doctorDesignation,
         doctorDepartment: doctorDepartment,
+        doctorOPDFee: doctorOPDFee,
+        doctorGereralHighFee: doctorGereralHighFee,
+        doctorGereralJanataFee: doctorGereralJanataFee,
+        doctorSemiPrivateFee: doctorSemiPrivateFee,
+        doctorPrivateSingleAcFee: doctorPrivateSingleAcFee,
+        doctorPrivateSingleAcDlxFee: doctorPrivateSingleAcDlxFee,
+        doctorPrivateSuiteFee: doctorPrivateSuiteFee,
+        doctorEmergencyFee: doctorEmergencyFee,
       });
       await doctorProfDetails.save();
     }
@@ -687,10 +703,30 @@ router.put(
       doctorCountry,
       doctorZipCode,
       // Doc Prof Details
-      doctorFee,
       doctorDesignation,
       doctorDepartment,
+      doctorFee,
+      doctorOPDFee,
+      doctorGereralHighFee,
+      doctorGereralJanataFee,
+      doctorSemiPrivateFee,
+      doctorPrivateSingleAcFee,
+      doctorPrivateSingleAcDlxFee,
+      doctorPrivateSuiteFee,
+      doctorEmergencyFee,
     } = req.body;
+
+    console.log(
+      doctorFee,
+      doctorOPDFee,
+      doctorGereralHighFee,
+      doctorGereralJanataFee,
+      doctorSemiPrivateFee,
+      doctorPrivateSingleAcFee,
+      doctorPrivateSingleAcDlxFee,
+      doctorPrivateSuiteFee,
+      doctorEmergencyFee
+    );
 
     try {
       const doctorImage = req.file ? req.file.filename : "";
@@ -782,6 +818,30 @@ router.put(
             doctorDepartment: doctorDepartment
               ? doctorDepartment
               : DoctorProfessionalDetailsModel.doctorDepartment,
+            doctorOPDFee: doctorOPDFee
+              ? doctorOPDFee
+              : DoctorProfessionalDetailsModel.doctorOPDFee,
+            doctorGereralHighFee: doctorGereralHighFee
+              ? doctorGereralHighFee
+              : DoctorProfessionalDetailsModel.doctorGereralHighFee,
+            doctorGereralJanataFee: doctorGereralJanataFee
+              ? doctorGereralJanataFee
+              : DoctorProfessionalDetailsModel.doctorGereralJanataFee,
+            doctorSemiPrivateFee: doctorSemiPrivateFee
+              ? doctorSemiPrivateFee
+              : DoctorProfessionalDetailsModel.doctorSemiPrivateFee,
+            doctorPrivateSingleAcFee: doctorPrivateSingleAcFee
+              ? doctorPrivateSingleAcFee
+              : DoctorProfessionalDetailsModel.doctorPrivateSingleAcFee,
+            doctorPrivateSingleAcDlxFee: doctorPrivateSingleAcDlxFee
+              ? doctorPrivateSingleAcDlxFee
+              : DoctorProfessionalDetailsModel.doctorPrivateSingleAcDlxFee,
+            doctorPrivateSuiteFee: doctorPrivateSuiteFee
+              ? doctorPrivateSuiteFee
+              : DoctorProfessionalDetailsModel.doctorPrivateSuiteFee,
+            doctorEmergencyFee: doctorEmergencyFee
+              ? doctorEmergencyFee
+              : DoctorProfessionalDetailsModel.doctorEmergencyFee,
           }
         );
       }
