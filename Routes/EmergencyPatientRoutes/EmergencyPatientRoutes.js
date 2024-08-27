@@ -1156,6 +1156,574 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
   }
 });
 
+// Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
+//   const {
+//     emergencyPatientId = "",
+//     patientName = "",
+//     page = 1,
+//     limit = 10,
+//   } = req.query;
+//   try {
+//     const skip = (Number(page) - 1) * Number(limit);
+
+//     const remainingBalanceCalc = await EmergencyPatientModel.aggregate([
+//       {
+//         $lookup: {
+//           from: "emergencypatientschecks",
+//           localField: "mainId",
+//           foreignField: "mainId",
+//           as: "EmergencyPatientMEDDOCLABData",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$EmergencyPatientMEDDOCLABData",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "managebeds",
+//           localField:
+//             "EmergencyPatientMEDDOCLABData.emergencyPatientCurrentBed",
+//           foreignField: "bedId",
+//           as: "bedDetails",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$bedDetails",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "doctors",
+//           localField: "EmergencyPatientMEDDOCLABData.doctorId",
+//           foreignField: "_id",
+//           as: "doctorData",
+//         },
+//       },
+//       // {
+//       //   $lookup: {
+//       //     from: "doctors",
+//       //     localField: "EmergencyPatientMEDDOCLABData.ReferedDoctorId",
+//       //     foreignField: "_id",
+//       //     as: "ReferedDoctor",
+//       //   },
+//       // },
+//       {
+//         $lookup: {
+//           from: "doctorprofessionaldetails",
+//           localField: "doctorData.doctorId",
+//           foreignField: "doctorId",
+//           as: "doctorFeesDatails",
+//         },
+//       },
+//       // {
+//       //   $lookup: {
+//       //     from: "doctorprofessionaldetails",
+//       //     localField: "ReferedDoctor.doctorId",
+//       //     foreignField: "doctorId",
+//       //     as: "RefereddoctorFeesDatails",
+//       //   },
+//       // },
+//       // {
+//       //   $addFields: {
+//       //     doctorFees: {
+//       //       $cond: {
+//       //         if: { $eq: [{ $size: "$doctorFeesDatails" }, 0] },
+//       //         then: 0,
+//       //         else: { $arrayElemAt: ["$doctorFeesDatails.doctorFee", 0] },
+//       //       },
+//       //     },
+//       //     // RefereddoctorFees: {
+//       //     //   $cond: {
+//       //     //     if: { $eq: [{ $size: "$RefereddoctorFeesDatails" }, 0] },
+//       //     //     then: 0,
+//       //     //     else: {
+//       //     //       $arrayElemAt: ["$RefereddoctorFeesDatails.doctorFee", 0],
+//       //     //     },
+//       //     //   },
+//       //     // },
+//       //   },
+//       // },
+//       {
+//         $project: {
+//           _id: "$mainId",
+//           bedId: 1,
+//           emergencyPatientDischarged: 1,
+//           createdAt: 1,
+//           emergencyPatientId:
+//             "$EmergencyPatientMEDDOCLABData.emergencyPatientData",
+//           VisitDateTime: "$EmergencyPatientMEDDOCLABData.VisitDateTime",
+//           submittedBy: "$EmergencyPatientMEDDOCLABData.submittedBy",
+//           doctorData: 1,
+//           // ReferedDoctor: 1,
+//           // doctorFees: "$doctorFees",
+//           // RefereddoctorFees: "$RefereddoctorFees",
+//           DailyMedicinePriceTotal: {
+//             $sum: "$EmergencyPatientMEDDOCLABData.medicine.Price",
+//           },
+//           DailyTestPriceTotal: {
+//             $sum: "$EmergencyPatientMEDDOCLABData.test.Price",
+//           },
+//           DailyDoctorVisitChargeBasedOnBed: {
+//             $switch: {
+//               branches: [
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "SEMI-PRIVATE",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorSemiPrivateFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "EMERGENCY",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorEmergencyFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "GENERAL HIGH",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorGereralHighFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "GENERAL JANATA",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorGereralJanataFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "PRIVATE SUITE",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorPrivateSuiteFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "PRIVATE SINGLE-AC-DLX",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorPrivateSingleAcDlxFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "PRIVATE SINGLE-AC",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorPrivateSingleAcFee",
+//                 },
+//               ],
+//               default: 0,
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$bedId" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$createdAt" },
+//           visitDate: { $first: "$VisitDateTime" },
+//           submittedBy: { $first: "$submittedBy" },
+//           totalDoctorFees: { $sum: "$doctorFees" },
+//           // totalRefereddoctorFees: { $sum: "$RefereddoctorFees" },
+//           totalDailyMedicinePriceTotal: { $sum: "$DailyMedicinePriceTotal" },
+//           totalDailyTestPriceTotal: { $sum: "$DailyTestPriceTotal" },
+//           DailyDoctorVisitChargeBasedOnBed: {
+//             $first: "$DailyDoctorVisitChargeBasedOnBed",
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           emergencyBedNo: 1,
+//           emergencyPatientDischarged: 1,
+//           creationDate: 1,
+//           totalDailyMedicinePriceTotal: 1,
+//           totalDailyTestPriceTotal: 1,
+//           visitDate: 1,
+//           // totalDoctorFees: 1,
+//           // totalRefereddoctorFees: 1,
+//           DailyDoctorVisitChargeBasedOnBed: 1,
+//           doctorVisitCharge: {
+//             $cond: {
+//               if: {
+//                 $or: {
+//                   $eq: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+//                   // $eq: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
+//                   // $eq: ["$DailyAdditionalDoctorVisitChargeBasedOnBed", 0],
+//                 },
+//               },
+//               then: 0,
+//               else: { $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0] },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           overallDoctorVisitCharge: { $sum: "$doctorVisitCharge" },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "emergencypatientbalances",
+//           localField: "_id",
+//           foreignField: "emergencyPatientRegId",
+//           as: "emergencyPatientBalanceData",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$emergencyPatientBalanceData",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$emergencyPatientBalanceData.balanceID" },
+//           uhid: { $first: "$emergencyPatientBalanceData.uhid" },
+//           emergencyPatientRegId: {
+//             $first: "$emergencyPatientBalanceData.emergencyPatientRegId",
+//           },
+//           // totalBalance: { $sum: "$balance.totalBalance" },
+//           balance: { $first: "$emergencyPatientBalanceData.balance" },
+//           // totalAddedBalance: { $first: "$balance.addedBalance" },
+//           charges: { $first: "$emergencyPatientBalanceData.charges" },
+//           labTestCharges: {
+//             $first: "$emergencyPatientBalanceData.labTestCharges",
+//           },
+//           overallTotalMedicinePrice: {
+//             $first: "$totalDailyMedicinePriceTotal",
+//           },
+//           overallTotalTestPrice: { $first: "$totalDailyTestPriceTotal" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//         },
+//       },
+//       { $unwind: { path: "$balance", preserveNullAndEmptyArrays: true } },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           // totalBalance: { $sum: "$balance.totalBalance" },
+//           totalAddedBalance: { $sum: "$balance.addedBalance" },
+//           charges: { $first: "$charges" },
+//           labTestCharges: { $first: "$labTestCharges" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$charges",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$charges.items",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           labTestCharges: { $first: "$labTestCharges" },
+//           // totalBalance: { $first: "$totalBalance" },
+//           totalAddedBalance: { $first: "$totalAddedBalance" },
+//           totalCharges: {
+//             $sum: {
+//               $multiply: ["$charges.items.quantity", "$charges.items.price"],
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$labTestCharges",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$labTestCharges.items",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           // labTestCharges: { $first: "$labTestCharges" },
+//           // totalBalance: { $first: "$totalBalance" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//           totalAddedBalance: { $first: "$totalAddedBalance" },
+//           totalCharges: { $first: "$totalCharges" },
+//           totalLabTestCharges: {
+//             $sum: {
+//               $multiply: [
+//                 "$labTestCharges.items.quantity",
+//                 "$labTestCharges.items.price",
+//               ],
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "managebeds",
+//           localField: "emergencyBedNo", // Adjust this field as needed
+//           foreignField: "bedId", // Adjust this field as needed
+//           as: "BedData",
+//         },
+//       },
+//       {
+//         $unwind: { path: "$BedData", preserveNullAndEmptyArrays: true },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           emergencyPatientObjectId: { $first: "$_id" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           totalAddedBalance: { $first: "$totalAddedBalance" },
+//           totalCharges: { $first: "$totalCharges" },
+//           totalLabTestCharges: { $first: "$totalLabTestCharges" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//           creationDate: { $first: "$creationDate" },
+//           beddata: { $first: "$BedData" },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "emergencypatientdischargereciepts",
+//           localField: "_id", // Adjust this field as needed
+//           foreignField: "emergencyPatientRegId", // Adjust this field as needed
+//           as: "dischargeData",
+//         },
+//       },
+//       {
+//         $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
+//       },
+//       {
+//         $addFields: {
+//           days: {
+//             $cond: {
+//               if: { $eq: ["$emergencyPatientDischarged", true] },
+//               then: {
+//                 // days: "$dischargeData.dateAndTimeOfDischarge",
+//                 $dateDiff: {
+//                   startDate: "$creationDate",
+//                   endDate: "$dischargeData.dateAndTimeOfDischarge",
+//                   unit: "day",
+//                 },
+//               },
+//               else: {
+//                 $dateDiff: {
+//                   startDate: "$creationDate",
+//                   endDate: "$$NOW",
+//                   unit: "day",
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           balanceID: 1,
+//           uhid: 1,
+//           emergencyPatientObjectId: 1,
+//           emergencyPatientRegId: 1,
+//           totalAddedBalance: 1,
+//           totalCharges: 1,
+//           totalLabTestCharges: 1,
+//           overallTotalMedicinePrice: 1,
+//           overallTotalTestPrice: 1,
+//           overallDoctorVisitCharge: 1,
+//           creationDate: 1,
+//           beddata: 1,
+//           days: { $add: ["$days", 1] },
+//         },
+//       },
+//       {
+//         $project: {
+//           balanceID: 1,
+//           uhid: 1,
+//           emergencyPatientObjectId: 1,
+//           emergencyPatientRegId: 1,
+//           totalAddedBalance: 1,
+//           totalCharges: 1,
+//           totalLabTestCharges: 1,
+//           overallTotalMedicinePrice: 1,
+//           overallTotalTestPrice: 1,
+//           overallDoctorVisitCharge: 1,
+//           creationDate: 1,
+//           // beddata: 1,
+//           days: 1,
+//           bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
+//           nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
+//           EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
+//           bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+//           sanitizationCharges: {
+//             $multiply: ["$days", "$beddata.sanitizationCharges"],
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           autoChargesTotal: {
+//             $add: [
+//               "$bedCharges",
+//               "$nursingCharges",
+//               "$EMOCharges",
+//               "$bioWasteCharges",
+//               "$sanitizationCharges",
+//             ],
+//           },
+//           finalTotal: {
+//             $add: [
+//               "$totalCharges",
+//               "$totalLabTestCharges",
+//               "$bedCharges",
+//               "$nursingCharges",
+//               "$EMOCharges",
+//               "$bioWasteCharges",
+//               "$sanitizationCharges",
+//               "$overallTotalMedicinePrice",
+//               "$overallTotalTestPrice",
+//               "$overallDoctorVisitCharge",
+//             ],
+//           },
+//           remainingBalance: {
+//             $subtract: [
+//               "$totalAddedBalance",
+//               {
+//                 $add: [
+//                   "$totalCharges",
+//                   "$totalLabTestCharges",
+//                   "$bedCharges",
+//                   "$nursingCharges",
+//                   "$EMOCharges",
+//                   "$bioWasteCharges",
+//                   "$sanitizationCharges",
+//                   "$overallTotalMedicinePrice",
+//                   "$overallTotalTestPrice",
+//                   "$overallDoctorVisitCharge",
+//                 ],
+//               },
+//             ],
+//           },
+//         },
+//       },
+//     ]);
+
+//     return res.status(200).json({
+//       balanceCalculation: remainingBalanceCalc,
+//     });
+//   } catch (error) {
+//     res.status(500).json("Internal Server Error");
+//   }
+// });
+
 Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
   const id = req.params.Id;
   try {
@@ -1615,6 +2183,7 @@ Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
       // }
     }
   } catch (error) {
+    console.log(error);
     res.status(500).json("Internal Server Error");
   }
 });
@@ -1660,6 +2229,10 @@ Router.post("/EmergencyPatient-POST", async (req, res) => {
           addedBalance: newEmergencyPatientData.emergencyDepositAmount,
           paymentMethod: emergencyPaymentMode,
           balanceNote: balanceNote,
+        },
+        currentBed: newEmergencyPatientData.bedId,
+        beds: {
+          bedId: newEmergencyPatientData.bedId,
         },
       });
 
