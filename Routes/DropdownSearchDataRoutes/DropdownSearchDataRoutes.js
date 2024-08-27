@@ -8,15 +8,15 @@ const DoctorModel = require("../../Models/DoctorSchema/DoctorSchema");
 const NurseModel = require("../../Models/NurseSchema/NurseSchema");
 
 Router.get("/DropdownData-Patient", async (req, res) => {
-  const { query } = req.query;
+  // const { query } = req.query;
   try {
     const patientData = await PatientModel.aggregate([
       {
         $sort: { _id: -1 },
       },
-      {
-        $match: { patientId: { $regex: query, $options: "i" } },
-      },
+      // {
+      //   $match: { patientId: { $regex: query, $options: "i" } },
+      // },
       {
         $project: {
           patientId: 1,
@@ -32,15 +32,15 @@ Router.get("/DropdownData-Patient", async (req, res) => {
 });
 
 Router.get("/DropdownData-Doctor", async (req, res) => {
-  const { query } = req.query;
+  // const { query } = req.query;
   try {
     const doctorData = await DoctorModel.aggregate([
       {
         $sort: { _id: -1 },
       },
-      {
-        $match: { doctorId: { $regex: query, $options: "i" } },
-      },
+      // {
+      //   $match: { doctorId: { $regex: query, $options: "i" } },
+      // },
       {
         $project: {
           doctorId: 1,
@@ -56,15 +56,15 @@ Router.get("/DropdownData-Doctor", async (req, res) => {
 });
 
 Router.get("/DropdownData-Nurse", async (req, res) => {
-  const { query } = req.query;
+  // const { query } = req.query;
   try {
     const nurseData = await NurseModel.aggregate([
       {
         $sort: { _id: -1 },
       },
-      {
-        $match: { nurseId: { $regex: query, $options: "i" } },
-      },
+      // {
+      //   $match: { nurseId: { $regex: query, $options: "i" } },
+      // },
       {
         $project: {
           nurseId: 1,
