@@ -13,6 +13,7 @@ const EmergencyNurseDischargeDetailsModel = require("../../Models/EmergencyPatie
 const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
 
 const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
+const EmergencyPatientsCheck = require("../../Models/EmergencyPatientsCheckSchema/EmergencyPatientsCheckSchema");
 
 const generateUniqueId = () => {
   const date = new Date();
@@ -134,6 +135,14 @@ Router.put("/EmergencyPatient-PUT-DISCHARGE/:Id", async (req, res) => {
               bedId: emergencyPatientUpdatedData.bedId,
             },
             { bedAvailableOrNot: true }
+          );
+          const emergencycheckroute = await EmergencyPatientsCheck.updateMany(
+            {
+              mainId: emergencyPatientUpdatedData.mainId,
+            },
+            {
+              discharge: true,
+            }
           );
           if (ManageBedsUpdatedData) {
             const newDischargeReciept =
@@ -298,9 +307,15 @@ Router.put(
       ICD,
       result,
       disease_Diagnose,
-      adviseDuringDischarge,
     } = req.body;
     try {
+      const medicineAdviseDuringDischarge = req.body
+        .medicineAdviseDuringDischarge
+        ? JSON.parse(req.body.medicineAdviseDuringDischarge)
+        : [];
+      const adviseDuringDischarge = req.body.adviseDuringDischarge
+        ? JSON.parse(req.body.adviseDuringDischarge)
+        : [];
       const updatedEmergencyDoctorDischargeDetails =
         await EmergencyDoctorDischargeDetailsModel.findOneAndUpdate(
           { emergencyPatientRegId: id },
@@ -328,6 +343,9 @@ Router.put(
             adviseDuringDischarge: adviseDuringDischarge
               ? adviseDuringDischarge
               : EmergencyDoctorDischargeDetailsModel.adviseDuringDischarge,
+            medicineAdviseDuringDischarge: medicineAdviseDuringDischarge
+              ? medicineAdviseDuringDischarge
+              : EmergencyDoctorDischargeDetailsModel.medicineAdviseDuringDischarge,
           }
         );
 
@@ -361,3 +379,4 @@ Router.put(
     }
   }
 );
+module.exports = Router;

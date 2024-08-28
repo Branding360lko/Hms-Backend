@@ -13,6 +13,7 @@ const IPDNurseDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPD
 const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema");
 
 const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
+const IPD = require("../../Models/IPDSchema/IPDSchema");
 
 const generateUniqueId = () => {
   const date = new Date();
@@ -149,6 +150,12 @@ Router.put("/IPDPatient-PUT-DISCHARGE/:Id", async (req, res) => {
             },
             { bedAvailableOrNot: true }
           );
+          const ipdDischarge = await IPD.updateMany(
+            {
+              ipdPatientMainId: ipdPatientUpdatedData.mainId,
+            },
+            { discharge: true }
+          );
           if (ManageBedsUpdatedData) {
             //   // console.log(totalCharges("2024-05-07T11:52:28.952+00:00", 500));
             //   // console.log(totalTime("2024-05-07T11:52:28.952+00:00"));
@@ -283,7 +290,7 @@ Router.put("/IPDPatientDischargeRequest-PUT/:id", async (req, res) => {
     }
     return res
       .status(200)
-      .json({ message: "Request to discharge sent successfully" });
+      .json({ message: "Resquest to discharge send successfully" });
   } catch (error) {
     res.status(500).json("Internal Server Error");
   }
@@ -368,6 +375,87 @@ Router.put(
         if (updatedIPDPatient) {
           return res.status(200).json({
             message: "IPD Patient Nurse Discharge Details has been updated",
+          });
+        }
+      }
+    } catch (error) {
+      res.status(500).json("Internal Server Error");
+    }
+  }
+);
+
+Router.put(
+  "/IPDPatientDischarge-DoctorDischargeDetails-PUT/:IpdPatientRegID",
+  async (req, res) => {
+    const id = req.params.IpdPatientRegID;
+
+    const {
+      doctorId,
+      provisionalDiagnosis,
+      finalDiagnosis,
+      physicianInCharge,
+      name,
+      ICD,
+      result,
+      disease_Diagnose,
+    } = req.body;
+    try {
+      const medicineAdviseDuringDischarge = req.body
+        .medicineAdviseDuringDischarge
+        ? JSON.parse(req.body.medicineAdviseDuringDischarge)
+        : [];
+      const adviseDuringDischarge = req.body.adviseDuringDischarge
+        ? JSON.parse(req.body.adviseDuringDischarge)
+        : [];
+      const updatedIPDDoctorDischargeDetails =
+        await IPDDoctorDischargeDetailsModel.findOneAndUpdate(
+          { ipdPatientRegId: id },
+          {
+            doctorId: doctorId
+              ? doctorId
+              : IPDDoctorDischargeDetailsModel.doctorId,
+            provisionalDiagnosis: provisionalDiagnosis
+              ? provisionalDiagnosis
+              : IPDDoctorDischargeDetailsModel.provisionalDiagnosis,
+            finalDiagnosis: finalDiagnosis
+              ? finalDiagnosis
+              : IPDDoctorDischargeDetailsModel.finalDiagnosis,
+            physicianInCharge: physicianInCharge
+              ? physicianInCharge
+              : IPDDoctorDischargeDetailsModel.physicianInCharge,
+            name: name ? name : IPDDoctorDischargeDetailsModel.name,
+            ICD: ICD ? ICD : IPDDoctorDischargeDetailsModel.ICD,
+            result: result ? result : IPDDoctorDischargeDetailsModel.result,
+            disease_Diagnose: disease_Diagnose
+              ? disease_Diagnose
+              : IPDDoctorDischargeDetailsModel.disease_Diagnose,
+            adviseDuringDischarge: adviseDuringDischarge
+              ? adviseDuringDischarge
+              : IPDDoctorDischargeDetailsModel.adviseDuringDischarge,
+            medicineAdviseDuringDischarge: medicineAdviseDuringDischarge
+              ? medicineAdviseDuringDischarge
+              : IPDDoctorDischargeDetailsModel.medicineAdviseDuringDischarge,
+          }
+        );
+
+      if (!updatedIPDDoctorDischargeDetails) {
+        return res.status(404).json("IPD Patient Discharge Details Not Found");
+      }
+
+      if (updatedIPDDoctorDischargeDetails) {
+        const updateIPDPatient = await IPDPatientModel.findOneAndUpdate(
+          {
+            mainId: updatedIPDDoctorDischargeDetails.ipdPatientRegId,
+          },
+          {
+            // ipdPatientDoctorRequestForDischarge: true,
+            ipdPatientDoctorConfirmation: true,
+          }
+        );
+
+        if (updateIPDPatient) {
+          return res.status(200).json({
+            message: "IPD Patient Doctor Discharge Details has been updated",
           });
         }
       }
