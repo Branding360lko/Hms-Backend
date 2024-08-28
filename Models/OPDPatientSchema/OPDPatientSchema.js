@@ -36,11 +36,34 @@ const OPDPatientSchema = new Schema(
       type: String,
       // required: true,
     },
+    opdPatientDicountPercentageByDoctorId: {
+      type: String,
+      // required: true,
+    },
+    opdPatientDicountPercentageByDoctor: {
+      type: String,
+      // required: true,
+    },
+
+    opdPatientRefundedAmount: {
+      type: String,
+      default: 0,
+      // required: true,
+    },
+    opdPatientFinalChargedAmount: {
+      type: String,
+      default: 0,
+      // required: true,
+    },
     opdDoctorVisitDate: {
       type: Date,
     },
     opdPatientNotes: {
       type: String,
+    },
+    opdPatientDiscountAlloted: {
+      type: Boolean,
+      default: false,
     },
     isDeleted: {
       type: Boolean,

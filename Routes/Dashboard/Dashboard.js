@@ -43,82 +43,6 @@ router.get("/DashboardData", async (req, res) => {
         $count: "dischargedEmergencyPatients",
       },
     ]);
-    const patientData = await PatientModel.aggregate([
-      { $sort: { _id: -1 } },
-      { $limit: 5 },
-    ]);
-    const opdPatientData = await OPDPatientsModel.aggregate([
-      { $sort: { _id: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: "patients",
-          localField: "opdPatientId",
-          foreignField: "patientId",
-          as: "patientData",
-        },
-      },
-      {
-        $lookup: {
-          from: "doctors",
-          localField: "opdDoctorId",
-          foreignField: "doctorId",
-          as: "doctorData",
-        },
-      },
-      {
-        $unwind: { path: "$patientData" },
-      },
-      {
-        $unwind: { path: "$doctorData" },
-      },
-      {
-        $project: {
-          _id: 1,
-          mainId: 1,
-          createdAt: 1,
-          patientName: "$patientData.patientName",
-          patientImage: "$patientData.patientImage",
-          doctorName: "$doctorData.doctorName",
-        },
-      },
-    ]);
-    const ipdPatientData = await IPDPatientsModel.aggregate([
-      { $sort: { _id: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: "patients",
-          localField: "ipdPatientId",
-          foreignField: "patientId",
-          as: "patientData",
-        },
-      },
-      {
-        $lookup: {
-          from: "doctors",
-          localField: "ipdDoctorId",
-          foreignField: "doctorId",
-          as: "doctorData",
-        },
-      },
-      {
-        $unwind: { path: "$patientData" },
-      },
-      {
-        $unwind: { path: "$doctorData" },
-      },
-      {
-        $project: {
-          _id: 1,
-          mainId: 1,
-          createdAt: 1,
-          patientName: "$patientData.patientName",
-          patientImage: "$patientData.patientImage",
-          doctorName: "$doctorData.doctorName",
-        },
-      },
-    ]);
 
     return res.status(200).json({
       Patient: totalPatient.length === 0 ? 0 : totalPatient[0].patients,
@@ -142,9 +66,6 @@ router.get("/DashboardData", async (req, res) => {
         totalDischargedEmergencyPatients.length === 0
           ? 0
           : totalDischargedEmergencyPatients[0].dischargedEmergencyPatients,
-      PatientData: patientData,
-      OPDPatientData: opdPatientData,
-      IPDPatientData: ipdPatientData,
     });
   } catch (error) {
     res.status(500).json("Internal Server Error");

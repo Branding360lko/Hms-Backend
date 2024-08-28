@@ -3,11 +3,28 @@ const express = require("express");
 const Router = express.Router();
 
 require("../../DB/connection");
-
+const multer = require("multer");
 const OPDPatientModel = require("../../Models/OPDPatientSchema/OPDPatientSchema");
 
 //
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "assets/images");
+  },
+  filename: function (req, file, cb) {
+    cb(null, uuidv4() + "-" + Date.now() + path.extname(file.originalname));
+  },
+});
+const fileFilter = (req, file, cb) => {
+  const allowedFileTypes = ["image/jpeg", "image/jpg", "image/png"];
+  if (allowedFileTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 
+const upload = multer({ storage, fileFilter });
 const generateUniqueId = async () => {
   try {
     // Get current date
@@ -215,23 +232,6 @@ Router.get("/OPDPatient-GET-ALL", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-Router.get("/OPDPatient-GET-ONE/:Id", async (req, res) => {
-  const id = req.params.Id;
-
-  try {
-    const OPDPatientData = await OPDPatientModel.findOne({
-      mainId: id,
-    });
-
-    if (!OPDPatientData) {
-      return res.status(404).json("Patient Not Found");
-    }
-
-    return res.status(200).json(OPDPatientData);
-  } catch (error) {
-    res.status(500).json("Internal Server Error");
-  }
-});
 Router.get("/OPDPatient-GET-ALL-with-doctorId/:doctorId", async (req, res) => {
   const Id = req.params.doctorId;
   const page = parseInt(req.query.page) || 0;
@@ -359,6 +359,7 @@ Router.get("/OPDPatient-Search-with-doctorId/:doctorId", async (req, res) => {
           opdDoctorVisitDate: 1,
           opdPatientNotes: 1,
           opdPatientCheckData: 1,
+          opdPatientDiscountAlloted: 1,
           isDeleted: 1,
           createdAt: 1,
           updatedAt: 1,
@@ -439,7 +440,61 @@ Router.get("/OPDPatient-GET-ONE/:Id", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
-
+Router.post(
+  "/OPDPatient-Refund-by-doctor/:opdPatientId",
+  upload.none(),
+  async (req, res) => {
+    const Id = req.params.opdPatientId;
+    const { refundPercentage, refundAlotedByDoctor } = req.body;
+    try {
+      const opdPatientData = await OPDPatientModel.findOneAndUpdate(
+        {
+          mainId: Id,
+        },
+        [
+          {
+            $set: {
+              opdPatientRefundedAmount: {
+                $multiply: [
+                  { $toDouble: "$opdPatientStandardCharges" },
+                  refundPercentage / 100,
+                ],
+              },
+              opdPatientFinalChargedAmount: {
+                $subtract: [
+                  { $toDouble: "$opdPatientStandardCharges" },
+                  {
+                    $toDouble: {
+                      $multiply: [
+                        { $toDouble: "$opdPatientStandardCharges" },
+                        refundPercentage / 100,
+                      ],
+                    },
+                  },
+                ],
+              },
+              opdPatientDicountPercentageByDoctor: refundPercentage,
+              opdPatientDicountPercentageByDoctorId: refundAlotedByDoctor,
+              opdPatientDiscountAlloted: true,
+            },
+          },
+        ],
+        {
+          new: true,
+        }
+      );
+      if (!opdPatientData) {
+        return res
+          .status(403)
+          .json({ message: "No Patient Finds With This Id" });
+      }
+      res.status(201).json({ message: "Discount Give Successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json("Internal Server Error");
+    }
+  }
+);
 Router.post("/OPDPatient-POST", async (req, res) => {
   const {
     opdPatientId,
@@ -470,6 +525,8 @@ Router.post("/OPDPatient-POST", async (req, res) => {
       opdPatientPaymentMode: opdPatientPaymentMode,
       opdDoctorVisitDate: new Date(),
       opdPatientNotes: opdPatientNotes,
+      opdPatientFinalChargedAmount: opdPatientStandardCharges,
+      opdPatientRefundedAmount: 0,
     });
 
     return await newOPDPatientData.save().then((data) =>
@@ -479,6 +536,8 @@ Router.post("/OPDPatient-POST", async (req, res) => {
       })
     );
   } catch (error) {
+    console.log(error);
+
     res.status(500).json("Internal Server Error");
   }
 });
@@ -498,35 +557,48 @@ Router.put("/OPDPatient-PUT/:Id", async (req, res) => {
     opdPatientNotes,
   } = req.body;
   try {
+    const existingPatientData = await OPDPatientModel.findOne({ mainId: id });
+    const standardCharges = opdPatientStandardCharges
+      ? opdPatientStandardCharges
+      : existingPatientData.opdPatientStandardCharges;
+
+    const discountPercentage =
+      existingPatientData.opdPatientDicountPercentageByDoctor || 0;
+
+    const opdPatientRefundedAmount =
+      standardCharges * (discountPercentage / 100);
+
+    const opdPatientFinalChargedAmount =
+      standardCharges - opdPatientRefundedAmount;
+
     const OPDPatientData = await OPDPatientModel.findOneAndUpdate(
       { mainId: id },
       {
-        opdPatientId: opdPatientId
-          ? opdPatientId
-          : OPDPatientModel.opdPatientId,
-        opdCaseId: opdCaseId ? opdCaseId : OPDPatientModel.opdCaseId,
-        opdId: opdId ? opdId : OPDPatientModel.opdId,
-        opdDoctorId: opdDoctorId ? opdDoctorId : OPDPatientModel.opdDoctorId,
-        opdPatientBloodPressure: opdPatientBloodPressure
-          ? opdPatientBloodPressure
-          : OPDPatientModel.opdPatientBloodPressure,
-        opdPatientStandardCharges: opdPatientStandardCharges
-          ? opdPatientStandardCharges
-          : OPDPatientModel.opdPatientStandardCharges,
-        opdPatientPaymentMode: opdPatientPaymentMode
-          ? opdPatientPaymentMode
-          : OPDPatientModel.opdPatientPaymentMode,
-        // opdDoctorVisitDate: opdDoctorVisitDate
-        //   ? opdDoctorVisitDate
-        //   : OPDPatientModel.opdDoctorVisitDate,
-        opdPatientNotes: opdPatientNotes
-          ? opdPatientNotes
-          : OPDPatientModel.opdPatientNotes,
-      }
+        $set: {
+          opdPatientId: opdPatientId || existingPatientData.opdPatientId,
+          opdCaseId: opdCaseId || existingPatientData.opdCaseId,
+          opdId: opdId || existingPatientData.opdId,
+          opdDoctorId: opdDoctorId || existingPatientData.opdDoctorId,
+          opdPatientBloodPressure:
+            opdPatientBloodPressure ||
+            existingPatientData.opdPatientBloodPressure,
+          opdPatientStandardCharges: standardCharges,
+          opdPatientPaymentMode:
+            opdPatientPaymentMode || existingPatientData.opdPatientPaymentMode,
+          opdPatientNotes:
+            opdPatientNotes || existingPatientData.opdPatientNotes,
+          opdPatientRefundedAmount: opdPatientRefundedAmount,
+          opdPatientFinalChargedAmount: opdPatientFinalChargedAmount,
+          opdPatientDiscountAlloted: true,
+        },
+      },
+      { new: true }
     );
+
     if (!OPDPatientData) {
       return res.status(404).json("OPD Patient data not found");
     }
+
     return res.status(200).json({
       message: "OPD Patient data Updated successfully",
       data: OPDPatientData,
@@ -559,6 +631,72 @@ Router.delete("/OPDPatient-DELETE/:Id", async (req, res) => {
       .json({ message: "OPD Patient Data Deleted successfully" });
   } catch (error) {
     res.status(500).json("Internal Server Error");
+  }
+});
+Router.get("/download-opd-list/:date", async (req, res) => {
+  const { date } = req.params;
+  try {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    const opdPatients = await OPDPatientModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfDay, $lt: endOfDay },
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "opdDoctorId",
+          foreignField: "doctorId",
+          as: "DoctorData",
+        },
+      },
+      {
+        $project: {
+          Name: "$patientData.patientName",
+          Doctor: "$DoctorData.doctorName",
+          opdPatientId: 1,
+          opdPatientStandardCharges: 1,
+          opdPatientDicountPercentageByDoctor: 1,
+          opdPatientFinalChargedAmount: 1,
+          opdPatientRefundedAmount: 1,
+        },
+      },
+    ]);
+    if (opdPatients.length === 0) {
+      return res.status(404).json({ error: `No Patient Found On ${date}` });
+    }
+    const json2csv = require("json2csv").parse;
+    const formattedData = opdPatients.map((patient, index) => ({
+      SN: index + 1,
+      PatientId: patient.opdPatientId,
+      Name: patient.Name.join(", "),
+      Doctor: patient.Doctor.join(", "),
+      StandardCharges: patient.opdPatientStandardCharges,
+      DicountPercentage: patient.opdPatientDicountPercentageByDoctor || 0,
+      RefundedAmount: patient.opdPatientRefundedAmount || 0,
+      FinalChargedAmount: patient.opdPatientFinalChargedAmount || "",
+    }));
+
+    const csv = json2csv(formattedData, { header: true });
+    res.header("Content-Type", "text/csv");
+    res.attachment(`opd-patients-${date}.csv`);
+    res.send(csv);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).send("Error fetching data");
   }
 });
 

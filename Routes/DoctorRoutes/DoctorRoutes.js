@@ -14,8 +14,8 @@ require("../../DB/connection");
 
 const DoctorModel = require("../../Models/DoctorSchema/DoctorSchema");
 const DoctorProfessionalDetailsModel = require("../../Models/DoctorSchema/DoctorProfessionalDetailsSchema");
-const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
 const IPDPatientModel = require("../../Models/IPDPatientSchema/IPDPatientSchema");
+const EmergencyPatientModel = require("../../Models/EmergencyPatientSchema/EmergencyPatientSchema");
 
 // const generateUniqueId = () => {
 //   const date = new Date();
@@ -206,6 +206,7 @@ router.get("/get-all-doctor", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+
 router.get("/Doctor-GET-ONE/:doctorId", async (req, res) => {
   const doctorId = req.params.doctorId;
   try {

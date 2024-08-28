@@ -105,11 +105,13 @@ app.use(
 );
 app.use("/api/", require("./Routes/NurseRoutes/NurseRoutes"));
 app.use("/api/", require("./Routes/TestPatientRoutes/TestPatientRoutes"));
-
-app.use("/api/", require("./Routes/Dashboard/Dashboard"));
-
 app.use(
-  "/api",
+  "/api/",
+  require("./Routes/EmergencyPatientRoutes/EmergencyPatientDischargeRoutes")
+);
+app.use("/api/", require("./Routes/Dashboard/Dashboard"));
+app.use(
+  "/api/",
   require("./Routes/DropdownSearchDataRoutes/DropdownSearchDataRoutes")
 );
 app.get("/home", (req, res) => {
@@ -119,5 +121,3 @@ app.get("/home", (req, res) => {
 app.listen(PORT, () => {
   console.log(`MongoDb server is running at port number ${PORT}`);
 });
-
-// this is updated backend

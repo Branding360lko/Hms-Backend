@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 require("../../DB/connection");
 
 const TestPatientModel = require("../../Models/TestPatientSchema/TestPatientSchema");
+const multer = require("multer");
 
 const generateUniqueId = () => {
   const date = new Date();
@@ -22,29 +23,28 @@ const generateUniqueId = () => {
   return uniqueId;
 };
 
-Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
-  const {
-    patientNameForSearch = "",
-    patientUHIDforSearch = "",
-    testNameForSearch = "",
-    mobileNumberForSearch = "",
-    page = 1,
-    limit = 10,
-  } = req.query;
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "assets/images");
+  },
+  filename: function (req, file, cb) {
+    cb(null, uuidv4() + "-" + Date.now() + path.extname(file.originalname));
+  },
+});
+const fileFilter = (req, file, cb) => {
+  const allowedFileTypes = ["image/jpeg", "image/jpg", "image/png"];
+  if (allowedFileTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 
+const upload = multer({ storage, fileFilter });
+
+Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
   try {
-    const skip = (Number(page) - 1) * Number(limit);
     const testPatients = await TestPatientModel.aggregate([
-      {
-        $sort: { _id: -1 },
-      },
-      {
-        $addFields: {
-          testId: {
-            $toObjectId: "$test",
-          },
-        },
-      },
       {
         $lookup: {
           from: "patients",
@@ -54,19 +54,45 @@ Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
         },
       },
       {
-        $lookup: {
-          from: "doctors",
-          localField: "prescribedByDoctor",
-          foreignField: "doctorId",
-          as: "doctorData",
+        $unwind: {
+          path: "$patientData",
         },
       },
       {
         $lookup: {
-          from: "tests",
-          localField: "testId",
-          foreignField: "_id",
-          as: "testData",
+          from: "doctors",
+          localField: "prescribedByDoctor",
+          foreignField: "doctorId",
+          as: "DoctorData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$DoctorData",
+        },
+      },
+    ]).sort({
+      createdAt: -1,
+    });
+    return res.status(200).json(testPatients);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json("Internal Server Error");
+  }
+});
+
+Router.get("/TestOfPatient-GET-ONE/:ID", async (req, res) => {
+  const id = req.params.ID;
+  try {
+    const testPatient = await TestPatientModel.aggregate([
+      { $match: { mainId: id } },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "testPatientId",
+          foreignField: "patientId",
+          as: "patientData",
         },
       },
       {
@@ -75,32 +101,19 @@ Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
         },
       },
       {
-        $unwind: {
-          path: "$doctorData",
+        $lookup: {
+          from: "doctors",
+          localField: "prescribedByDoctor",
+          foreignField: "doctorId",
+          as: "DoctorData",
         },
       },
       {
         $unwind: {
-          path: "$testData",
+          path: "$DoctorData",
         },
-      },
-      {
-        $skip: skip,
-      },
-      {
-        $limit: Number(limit),
       },
     ]);
-    return res.status(200).json(testPatients);
-  } catch (error) {
-    res.status(500).json("Internal Server Error");
-  }
-});
-
-Router.get("/TestOfPatient-GET-ONE/:ID", async (req, res) => {
-  const id = req.params.ID;
-  try {
-    const testPatient = await TestPatientModel.findOne({ mainId: id });
 
     if (!testPatient) {
       return res.status(404).json("Test Patient Not Found!");
@@ -114,21 +127,34 @@ Router.get("/TestOfPatient-GET-ONE/:ID", async (req, res) => {
   }
 });
 
-Router.post("/TestOfPatient-POST", async (req, res) => {
-  const { testPatientId, prescribedByDoctor, test, patientType, notes } =
-    req.body;
+Router.post("/TestOfPatient-POST", upload.none(), async (req, res) => {
+  const {
+    testPatientId,
+    prescribedByDoctor,
+    patientType,
+    note,
+    total,
+    paymentType,
+  } = req.body;
+
   try {
+    const test = req.body.test ? JSON.parse(req.body.test) : [];
     const newTestPatient = new TestPatientModel({
       mainId: "TP-" + generateUniqueId(),
       testPatientId: testPatientId,
       prescribedByDoctor: prescribedByDoctor,
-      test: test,
+      test: test.map((tst) => ({
+        Name: tst.name,
+
+        Price: tst.price,
+        Quantity: tst.quantity,
+        Total: tst.total,
+      })),
       patientType: patientType,
-      notes: notes,
+      note: note,
+      total: total,
+      paymentType: paymentType,
     });
-
-    // console.log(newTestPatient);
-
     return await newTestPatient.save().then((data) => {
       return res.status(200).json({
         message: "Test Of Patient Created Successfully!",
@@ -136,14 +162,23 @@ Router.post("/TestOfPatient-POST", async (req, res) => {
       });
     });
   } catch (error) {
+    console.log(error);
+
     res.status(500).json("Internal Server Error");
   }
 });
 
 Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
   const id = req.params.ID;
-  const { testPatientId, prescribedByDoctor, test, patientType, notes } =
-    req.body;
+  const {
+    testPatientId,
+    prescribedByDoctor,
+    test,
+    patientType,
+    note,
+    total,
+    paymentType,
+  } = req.body;
 
   try {
     const updatedTestPatient = await TestPatientModel.findOneAndUpdate(
@@ -157,7 +192,9 @@ Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
           : TestPatientModel.prescribedByDoctor,
         test: test ? test : TestPatientModel.test,
         patientType: patientType ? patientType : TestPatientModel.patientType,
-        notes: notes ? notes : TestPatientModel.notes,
+        note: note ? note : TestPatientModel.note,
+        total: total ? total : TestPatientModel.total,
+        paymentType: paymentType ? paymentType : TestPatientModel.paymentType,
       }
     );
 

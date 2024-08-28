@@ -16,15 +16,38 @@ const TestPatientSchema = new Schema(
       type: String,
       required: true,
     },
-    test: {
-      type: String,
-      required: true,
+    test: [
+      {
+        Name: {
+          type: String,
+          require: true,
+        },
+        Price: {
+          type: Number,
+          require: true,
+        },
+        Quantity: {
+          type: Number,
+          require: true,
+        },
+        Total: {
+          type: Number,
+          require: true,
+        },
+      },
+    ],
+    total: {
+      type: Number,
+      default: 0,
     },
     patientType: {
       type: String,
       required: true,
     },
-    notes: {
+    paymentType: {
+      type: String,
+    },
+    note: {
       type: String,
     },
     isDeleted: {

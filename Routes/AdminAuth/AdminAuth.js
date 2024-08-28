@@ -141,10 +141,6 @@ Router.post("/AdminLogin", async (req, res) => {
       return res.status(401).json("Admin username is incorrect!");
     }
 
-    if (admin.isActive === false) {
-      return res.status(400).json("Admin is not authorised to login!!");
-    }
-
     const password = await bcrypt.compare(adminPassword, admin.adminPassword);
 
     if (!password) {
@@ -162,14 +158,14 @@ Router.post("/AdminLogin", async (req, res) => {
       },
       secretKey,
       {
-        expiresIn: 3600,
+        expiresIn: 7200,
       }
     );
 
     res.cookie("adminToken", token, {
       withCredentials: true,
       httpOnly: false,
-      maxAge: 2 * 60 * 60 * 1000,
+      maxAge: 7200 * 1000 * 1000,
     });
 
     return res.status(200).json({
@@ -187,24 +183,20 @@ Router.post("/AdminLogin", async (req, res) => {
 Router.put("/Admin-PUT/:adminId", async (req, res) => {
   const AdminID = req.params.adminId;
 
-  const { adminName, adminPassword, adminRole, adminEmail } = req.body;
+  const { adminName, adminPassword, adminRole } = req.body;
 
-  // console.log(req.body);
+  console.log(req.body);
   try {
-    const existingAdmin = await AdminModel.findOne({ adminId: AdminID });
-    if (!existingAdmin) {
-      return res.status(404).json({ error: "Admin not found" });
-    }
-    if (adminEmail && adminEmail !== existingAdmin.adminEmail) {
-      const adminExistWithEmail = await AdminModel.findOne({
-        adminEmail: adminEmail,
-      });
-      if (adminExistWithEmail) {
-        return res
-          .status(422)
-          .json({ error: "Admin already exists with the same email id!" });
-      }
-    }
+    // const adminExistWithEmail = await AdminModel.findOne({
+    //   adminEmail: adminEmail,
+    // });
+    // const adminExistWithID = await AdminModel.findOne({ adminId: AdminID });
+    // if (
+    //   adminExistWithEmail.adminEmail &&
+    //   adminExistWithEmail.adminEmail !== adminExistWithID.adminEmail
+    // ) {
+    //   return res.status(422).json("Admin already exist with same email id!");
+    // }
 
     bcrypt.hash(adminPassword, 10, async (error, hashedPassword) => {
       if (error) {
@@ -215,7 +207,7 @@ Router.put("/Admin-PUT/:adminId", async (req, res) => {
         { adminId: AdminID },
         {
           adminName: adminName ? adminName : AdminModel.adminName,
-          adminEmail: adminEmail ? adminEmail : AdminModel.adminEmail,
+          // adminEmail: adminEmail ? adminEmail : AdminModel.adminEmail,
           adminPassword: adminPassword
             ? hashedPassword
             : AdminModel.adminPassword,
@@ -224,12 +216,12 @@ Router.put("/Admin-PUT/:adminId", async (req, res) => {
       );
 
       if (!admin) {
-        return res.status(404).json({ error: "Admin not found" });
+        return res.status(404).json("Admin not found");
       }
       return res.status(200).json({ message: "Admin updated successfully!" });
     });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error!" });
+    res.status(500).json("Internal Server Error!");
   }
 });
 
