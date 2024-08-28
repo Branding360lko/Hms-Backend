@@ -37,9 +37,23 @@ const EmergencyDoctorDischargeDetailsSchema = new Schema(
     disease_Diagnose: {
       type: String,
     },
-    adviseDuringDischarge: {
-      type: String,
-    },
+    adviseDuringDischarge: [
+      {
+        advice: {
+          type: String,
+        },
+      },
+    ],
+    medicineAdviseDuringDischarge: [
+      {
+        medicine: {
+          type: String,
+        },
+        schedule: {
+          type: String,
+        },
+      },
+    ],
     isDeleted: {
       type: Boolean,
       default: false,
