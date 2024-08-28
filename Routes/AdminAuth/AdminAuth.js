@@ -141,6 +141,10 @@ Router.post("/AdminLogin", async (req, res) => {
       return res.status(401).json("Admin username is incorrect!");
     }
 
+    if (admin.isActive === false) {
+      return res.status(400).json("Admin is not authorised to login!!");
+    }
+
     const password = await bcrypt.compare(adminPassword, admin.adminPassword);
 
     if (!password) {
@@ -158,14 +162,14 @@ Router.post("/AdminLogin", async (req, res) => {
       },
       secretKey,
       {
-        expiresIn: 7200,
+        expiresIn: 3600,
       }
     );
 
     res.cookie("adminToken", token, {
       withCredentials: true,
       httpOnly: false,
-      maxAge: 7200 * 1000 * 1000,
+      maxAge: 2 * 60 * 60 * 1000,
     });
 
     return res.status(200).json({

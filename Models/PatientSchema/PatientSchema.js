@@ -18,10 +18,16 @@ const PatientSchema = new Schema(
       type: String,
       // required: true,
     },
+    relativeCategory: {
+      type: String,
+    },
     patientFatherName: {
       type: String,
     },
     patientHusbandName: {
+      type: String,
+    },
+    patientCareOfName: {
       type: String,
     },
     patientDateOfBirth: {
@@ -69,6 +75,12 @@ const PatientSchema = new Schema(
       type: String,
     },
     patientState: {
+      type: String,
+    },
+    patientCityNew: {
+      type: String,
+    },
+    patientStateNew: {
       type: String,
     },
     patientCountry: {
