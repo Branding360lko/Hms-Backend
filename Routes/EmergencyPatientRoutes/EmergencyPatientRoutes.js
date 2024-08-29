@@ -34,6 +34,7 @@ Router.get("/EmergencyPatient-GET-ALL", async (req, res) => {
   const {
     emergencyPatientId = "",
     patientName = "",
+    patientMobileNumber = "",
     page = 1,
     limit = 10,
   } = req.query;
@@ -42,10 +43,8 @@ Router.get("/EmergencyPatient-GET-ALL", async (req, res) => {
 
     // const EmergencyPatientData = await EmergencyPatientModel.find();
 
-    const EmergencyPatientData = await EmergencyPatientModel.aggregate([
-      {
-        $sort: { _id: -1 },
-      },
+    let EmergencyPatientData = [];
+    await EmergencyPatientModel.aggregate([
       {
         $lookup: {
           from: "patients",
@@ -71,6 +70,7 @@ Router.get("/EmergencyPatient-GET-ALL", async (req, res) => {
       {
         $addFields: {
           patientName: "$patientData.patientName",
+          patientPhone: "$patientData.patientPhone",
         },
       },
       {
@@ -80,14 +80,31 @@ Router.get("/EmergencyPatient-GET-ALL", async (req, res) => {
         $match: { patientName: { $regex: patientName, $options: "i" } },
       },
       {
+        $match: {
+          patientPhone: { $regex: patientMobileNumber, $options: "i" },
+        },
+      },
+      {
+        $sort: { _id: -1 },
+      },
+      {
         $skip: skip,
       },
       {
         $limit: Number(limit),
       },
-    ]);
+    ])
+      .then((d) => {
+        EmergencyPatientData = d;
+      })
+      .catch(() => {
+        if (error) {
+          EmergencyPatientData = [];
+        }
+      });
 
-    let totalEmergencyPatient = 0;
+    let totalEmergencyPatient = await EmergencyPatientModel.countDocuments();
+
     if (emergencyPatientId !== "") {
       totalEmergencyPatient = await EmergencyPatientModel.countDocuments({
         patientId: { $regex: emergencyPatientId, $options: "i" },
@@ -118,8 +135,46 @@ Router.get("/EmergencyPatient-GET-ALL", async (req, res) => {
             $count: "patientName",
           },
         ]
-      );
-      totalEmergencyPatient = totalEmergencyPatientCounts[0].patientName;
+      )
+        .then((d) => {
+          totalEmergencyPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalEmergencyPatient = 0;
+        });
+    } else if (patientMobileNumber !== "") {
+      const totalOPDPatientCounts = await EmergencyPatientModel.aggregate([
+        {
+          $lookup: {
+            from: "patients",
+            localField: "patientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        {
+          $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            patientPhone: "$patientData.patientPhone",
+          },
+        },
+        {
+          $match: {
+            patientPhone: { $regex: patientMobileNumber, $options: "i" },
+          },
+        },
+        {
+          $count: "patientCount",
+        },
+      ])
+        .then((d) => {
+          totalEmergencyPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalEmergencyPatient = 0;
+        });
     }
 
     res.status(200).json({

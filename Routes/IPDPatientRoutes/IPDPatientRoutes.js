@@ -37,16 +37,16 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
   const {
     ipdPatientId = "",
     patientName = "",
+    patientMobileNumber = "",
     page = 1,
     limit = 10,
   } = req.query;
   try {
     const skip = (Number(page) - 1) * Number(limit);
 
-    const ipdPatientData = await IPDPatientModel.aggregate([
-      {
-        $sort: { _id: -1 },
-      },
+    let ipdPatientData = [];
+
+    await IPDPatientModel.aggregate([
       {
         $lookup: {
           from: "patients",
@@ -72,6 +72,7 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
       {
         $addFields: {
           patientName: "$patientData.patientName",
+          patientPhone: "$patientData.patientPhone",
         },
       },
       {
@@ -81,15 +82,32 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
         $match: { patientName: { $regex: patientName, $options: "i" } },
       },
       {
+        $match: {
+          patientPhone: { $regex: patientMobileNumber, $options: "i" },
+        },
+      },
+      {
+        $sort: { _id: -1 },
+      },
+      {
         $skip: skip,
       },
       {
         $limit: Number(limit),
       },
-    ]);
+    ])
+      .then((d) => {
+        ipdPatientData = d;
+      })
+      .catch(() => {
+        if (error) {
+          ipdPatientData = [];
+        }
+      });
     // const ipdPatientData = await IPDPatientModel.find();
 
-    let totalIPDPatient = 0;
+    let totalIPDPatient = await IPDPatientModel.countDocuments();
+
     if (ipdPatientId !== "") {
       totalIPDPatient = await IPDPatientModel.countDocuments({
         ipdPatientId: { $regex: ipdPatientId, $options: "i" },
@@ -116,10 +134,49 @@ Router.get("/IPDPatient-GET-ALL", async (req, res) => {
           $match: { patientName: { $regex: patientName, $options: "i" } },
         },
         {
-          $count: "patientName",
+          $count: "patientCount",
         },
-      ]);
-      totalIPDPatient = totalIPDPatientCounts[0].patientName;
+      ])
+        .then((d) => {
+          totalIPDPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalIPDPatient = 0;
+        });
+    } else if (patientMobileNumber !== "") {
+      const totalOPDPatientCounts = await IPDPatientModel.aggregate([
+        {
+          $lookup: {
+            from: "patients",
+            localField: "ipdPatientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        {
+          $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            patientPhone: "$patientData.patientPhone",
+          },
+        },
+        {
+          $match: {
+            patientPhone: { $regex: patientMobileNumber, $options: "i" },
+          },
+        },
+        {
+          $count: "patientCount",
+        },
+      ])
+        .then((d) => {
+          totalIPDPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalIPDPatient = 0;
+        });
+      // totalOPDPatient = totalOPDPatientCounts[0].patientPhone;
     }
 
     res.status(200).json({
