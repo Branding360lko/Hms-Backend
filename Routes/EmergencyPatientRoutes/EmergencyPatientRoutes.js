@@ -2374,262 +2374,485 @@ Router.put("/EmergencyPatient-PUT/:ID", async (req, res) => {
   }
 });
 
+// Router.put(
+//   "/EmergencyPatient-PUT-ChangeBed/:emergencyPatientRegId",
+//   async (req, res) => {
+//     const id = req.params.emergencyPatientRegId;
+
+//     const { emergencyBedNo } = req.body;
+//     try {
+//       const emergencyPatient = await EmergencyPatientModel.findOne({
+//         mainId: id,
+//       });
+
+//       if (emergencyPatient) {
+//         if (emergencyPatient.bedId === emergencyBedNo) {
+//           return res.status(400).json({ error: "Bed Id Already Used" });
+//         }
+//         if (emergencyPatient.bedId !== emergencyBedNo) {
+//           const balanceCalculation = await ManageBedsModel.aggregate([
+//             {
+//               $match: { bedId: emergencyPatient.bedId },
+//             },
+//             {
+//               $lookup: {
+//                 from: "emergencypatientbalances",
+//                 localField: "bedId",
+//                 foreignField: "currentBed",
+//                 as: "emergencyPatientBalancesData",
+//               },
+//             },
+//             {
+//               $unwind: {
+//                 path: "$emergencyPatientBalancesData",
+//                 preserveNullAndEmptyArrays: true,
+//               },
+//             },
+//             {
+//               $project: {
+//                 bedId: 1,
+//                 bedCharges: 1,
+//                 nursingCharges: 1,
+//                 EMOCharges: 1,
+//                 bioWasteCharges: 1,
+//                 sanitizationCharges: 1,
+//                 beds: "$emergencyPatientBalancesData.beds",
+//               },
+//             },
+//             {
+//               $addFields: {
+//                 bedData: { $last: "$beds" },
+//               },
+//             },
+//             {
+//               $addFields: {
+//                 days: {
+//                   $dateDiff: {
+//                     startDate: "$bedData.createdAt",
+//                     endDate: "$$NOW",
+//                     unit: "day",
+//                   },
+//                 },
+//               },
+//             },
+//             {
+//               $project: {
+//                 bedId: 1,
+//                 days: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: { $add: ["$days", 1] },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: "$days",
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalBedCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$bedCharges", { $add: ["$days", 1] }],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$bedCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalNursingCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: [
+//                             "$nursingCharges",
+//                             { $add: ["$days", 1] },
+//                           ],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$nursingCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalEMOCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$EMOCharges", { $add: ["$days", 1] }],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$EMOCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalBioWasteCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: [
+//                             "$bioWasteCharges",
+//                             { $add: ["$days", 1] },
+//                           ],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$bioWasteCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalSanitizationCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: [
+//                             "$sanitizationCharges",
+//                             { $add: ["$days", 1] },
+//                           ],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$sanitizationCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//               },
+//             },
+//             {
+//               $addFields: {
+//                 subTotal: {
+//                   $add: [
+//                     "$totalBedCharges",
+//                     "$totalNursingCharges",
+//                     "$totalEMOCharges",
+//                     "$totalBioWasteCharges",
+//                     "$totalSanitizationCharges",
+//                   ],
+//                 },
+//               },
+//             },
+//           ]);
+//           if (balanceCalculation) {
+//             const bedChargesUpdate =
+//               await EmergencyPatientBalanceModel.findOneAndUpdate(
+//                 {
+//                   emergencyPatientRegId: emergencyPatient.mainId,
+//                 },
+//                 {
+//                   $push: {
+//                     bedCharges: balanceCalculation[0],
+//                     beds: {
+//                       bedId: emergencyBedNo,
+//                     },
+//                   },
+//                   currentBed: emergencyBedNo,
+//                 }
+//               );
+
+//             if (bedChargesUpdate) {
+//               const emergencyPatientData =
+//                 await EmergencyPatientModel.findOneAndUpdate(
+//                   {
+//                     mainId: id,
+//                   },
+//                   {
+//                     bedId: emergencyBedNo,
+//                   }
+//                 );
+
+//               if (emergencyPatientData) {
+//                 const bedAvailabilityUpdateForOldBed =
+//                   await ManageBedsModel.findOneAndUpdate(
+//                     {
+//                       bedId: emergencyPatient.bedId,
+//                     },
+//                     { bedAvailableOrNot: true }
+//                   );
+//                 if (bedAvailabilityUpdateForOldBed) {
+//                   const bedAvailabilityUpdateForNewBed =
+//                     await ManageBedsModel.findOneAndUpdate(
+//                       {
+//                         bedId: emergencyBedNo,
+//                       },
+//                       { bedAvailableOrNot: false }
+//                     );
+//                   if (bedAvailabilityUpdateForNewBed) {
+//                     return res
+//                       .status(200)
+//                       .json({ message: "Bed Changed Successfully" });
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//           // console.log(balanceCalculation);
+//         }
+//       }
+//     } catch (error) {
+//       // console.log(error);
+//       res.status(500).json("Internal Server Error");
+//     }
+//   }
+// );
+
 Router.put(
   "/EmergencyPatient-PUT-ChangeBed/:emergencyPatientRegId",
   async (req, res) => {
     const id = req.params.emergencyPatientRegId;
-
     const { emergencyBedNo } = req.body;
+
     try {
       const emergencyPatient = await EmergencyPatientModel.findOne({
         mainId: id,
       });
 
-      if (emergencyPatient) {
-        if (emergencyPatient.bedId === emergencyBedNo) {
-          return res.status(400).json({ error: "Bed Id Already Used" });
-        }
-        if (emergencyPatient.bedId !== emergencyBedNo) {
-          const balanceCalculation = await ManageBedsModel.aggregate([
-            {
-              $match: { bedId: emergencyPatient.bedId },
-            },
-            {
-              $lookup: {
-                from: "emergencypatientbalances",
-                localField: "bedId",
-                foreignField: "currentBed",
-                as: "emergencyPatientBalancesData",
-              },
-            },
-            {
-              $unwind: {
-                path: "$emergencyPatientBalancesData",
-                preserveNullAndEmptyArrays: true,
-              },
-            },
-            {
-              $project: {
-                bedId: 1,
-                bedCharges: 1,
-                nursingCharges: 1,
-                EMOCharges: 1,
-                bioWasteCharges: 1,
-                sanitizationCharges: 1,
-                beds: "$emergencyPatientBalancesData.beds",
-              },
-            },
-            {
-              $addFields: {
-                bedData: { $last: "$beds" },
-              },
-            },
-            {
-              $addFields: {
-                days: {
-                  $dateDiff: {
-                    startDate: "$bedData.createdAt",
-                    endDate: "$$NOW",
-                    unit: "day",
-                  },
-                },
-              },
-            },
-            {
-              $project: {
-                bedId: 1,
-                days: {
-                  $switch: {
-                    branches: [
-                      {
-                        case: { $eq: [{ $size: "$beds" }, 1] },
-                        then: { $add: ["$days", 1] },
-                      },
-                      {
-                        case: { $gt: [{ $size: "$beds" }, 1] },
-                        then: "$days",
-                      },
-                    ],
-                  },
-                },
-                totalBedCharges: {
-                  $switch: {
-                    branches: [
-                      {
-                        case: { $eq: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$bedCharges", { $add: ["$days", 1] }],
-                        },
-                      },
-                      {
-                        case: { $gt: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$bedCharges", "$days"],
-                        },
-                      },
-                    ],
-                  },
-                },
-                totalNursingCharges: {
-                  $switch: {
-                    branches: [
-                      {
-                        case: { $eq: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: [
-                            "$nursingCharges",
-                            { $add: ["$days", 1] },
-                          ],
-                        },
-                      },
-                      {
-                        case: { $gt: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$nursingCharges", "$days"],
-                        },
-                      },
-                    ],
-                  },
-                },
-                totalEMOCharges: {
-                  $switch: {
-                    branches: [
-                      {
-                        case: { $eq: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$EMOCharges", { $add: ["$days", 1] }],
-                        },
-                      },
-                      {
-                        case: { $gt: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$EMOCharges", "$days"],
-                        },
-                      },
-                    ],
-                  },
-                },
-                totalBioWasteCharges: {
-                  $switch: {
-                    branches: [
-                      {
-                        case: { $eq: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: [
-                            "$bioWasteCharges",
-                            { $add: ["$days", 1] },
-                          ],
-                        },
-                      },
-                      {
-                        case: { $gt: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$bioWasteCharges", "$days"],
-                        },
-                      },
-                    ],
-                  },
-                },
-                totalSanitizationCharges: {
-                  $switch: {
-                    branches: [
-                      {
-                        case: { $eq: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: [
-                            "$sanitizationCharges",
-                            { $add: ["$days", 1] },
-                          ],
-                        },
-                      },
-                      {
-                        case: { $gt: [{ $size: "$beds" }, 1] },
-                        then: {
-                          $multiply: ["$sanitizationCharges", "$days"],
-                        },
-                      },
-                    ],
-                  },
-                },
-              },
-            },
-            {
-              $addFields: {
-                subTotal: {
-                  $add: [
-                    "$totalBedCharges",
-                    "$totalNursingCharges",
-                    "$totalEMOCharges",
-                    "$totalBioWasteCharges",
-                    "$totalSanitizationCharges",
-                  ],
-                },
-              },
-            },
-          ]);
-          if (balanceCalculation) {
-            const bedChargesUpdate =
-              await EmergencyPatientBalanceModel.findOneAndUpdate(
-                {
-                  emergencyPatientRegId: emergencyPatient.mainId,
-                },
-                {
-                  $push: {
-                    bedCharges: balanceCalculation[0],
-                    beds: {
-                      bedId: emergencyBedNo,
-                    },
-                  },
-                  currentBed: emergencyBedNo,
-                }
-              );
-
-            if (bedChargesUpdate) {
-              const emergencyPatientData =
-                await EmergencyPatientModel.findOneAndUpdate(
-                  {
-                    mainId: id,
-                  },
-                  {
-                    bedId: emergencyBedNo,
-                  }
-                );
-
-              if (emergencyPatientData) {
-                const bedAvailabilityUpdateForOldBed =
-                  await ManageBedsModel.findOneAndUpdate(
-                    {
-                      bedId: emergencyPatient.bedId,
-                    },
-                    { bedAvailableOrNot: true }
-                  );
-                if (bedAvailabilityUpdateForOldBed) {
-                  const bedAvailabilityUpdateForNewBed =
-                    await ManageBedsModel.findOneAndUpdate(
-                      {
-                        bedId: emergencyBedNo,
-                      },
-                      { bedAvailableOrNot: false }
-                    );
-                  if (bedAvailabilityUpdateForNewBed) {
-                    return res
-                      .status(200)
-                      .json({ message: "Bed Changed Successfully" });
-                  }
-                }
-              }
-            }
-          }
-          // console.log(balanceCalculation);
-        }
+      if (!emergencyPatient) {
+        return res.status(404).json({ error: "Emergency patient not found" });
       }
+
+      if (emergencyPatient.bedId === emergencyBedNo) {
+        return res.status(400).json({ error: "Bed Id Already Used" });
+      }
+
+      const balanceCalculation = await ManageBedsModel.aggregate([
+        { $match: { bedId: emergencyPatient.bedId } },
+        {
+          $lookup: {
+            from: "emergencypatientbalances",
+            localField: "bedId",
+            foreignField: "currentBed",
+            as: "emergencyPatientBalancesData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$emergencyPatientBalancesData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            bedId: 1,
+            bedCharges: 1,
+            nursingCharges: 1,
+            EMOCharges: 1,
+            bioWasteCharges: 1,
+            sanitizationCharges: 1,
+            beds: { $ifNull: ["$emergencyPatientBalancesData.beds", []] },
+            createdAt: {
+              $ifNull: ["$emergencyPatientBalancesData.createdAt", "$$NOW"],
+            },
+          },
+        },
+        {
+          $addFields: {
+            bedData: { $last: "$beds" },
+          },
+        },
+        {
+          $addFields: {
+            days: {
+              $dateDiff: {
+                startDate: "$bedData.createdAt",
+                endDate: "$$NOW",
+                unit: "day",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            bedId: 1,
+            days: {
+              $cond: {
+                if: { $gt: [{ $size: "$beds" }, 1] },
+                then: "$days",
+                else: { $add: ["$days", 1] },
+              },
+            },
+            totalBedCharges: {
+              $multiply: [
+                "$bedCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalNursingCharges: {
+              $multiply: [
+                "$nursingCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalEMOCharges: {
+              $multiply: [
+                "$EMOCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalBioWasteCharges: {
+              $multiply: [
+                "$bioWasteCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalSanitizationCharges: {
+              $multiply: [
+                "$sanitizationCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            subTotal: {
+              $add: [
+                "$totalBedCharges",
+                "$totalNursingCharges",
+                "$totalEMOCharges",
+                "$totalBioWasteCharges",
+                "$totalSanitizationCharges",
+              ],
+            },
+          },
+        },
+      ]);
+
+      console.log("Balance Calculation:", balanceCalculation);
+
+      if (!balanceCalculation || balanceCalculation.length === 0) {
+        return res.status(404).json({ error: "Balance calculation not found" });
+      }
+
+      const bedChargesUpdate =
+        await EmergencyPatientBalanceModel.findOneAndUpdate(
+          { emergencyPatientRegId: emergencyPatient.mainId },
+          {
+            $push: {
+              bedCharges: balanceCalculation[0],
+              beds: { bedId: emergencyBedNo },
+            },
+            currentBed: emergencyBedNo,
+          },
+          { new: true }
+        );
+
+      console.log("Bed Charges Update Result:", bedChargesUpdate);
+
+      if (!bedChargesUpdate) {
+        return res.status(500).json({
+          error: "Failed to update bed charges",
+          details: "No update performed on EmergencyPatientBalanceModel.",
+        });
+      }
+
+      const emergencyPatientData = await EmergencyPatientModel.findOneAndUpdate(
+        { mainId: id },
+        { bedId: emergencyBedNo },
+        { new: true }
+      );
+
+      if (!emergencyPatientData) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update emergency patient data" });
+      }
+
+      const bedAvailabilityUpdateForOldBed =
+        await ManageBedsModel.findOneAndUpdate(
+          { bedId: emergencyPatient.bedId },
+          { bedAvailableOrNot: true }
+        );
+
+      if (!bedAvailabilityUpdateForOldBed) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update old bed availability" });
+      }
+
+      const bedAvailabilityUpdateForNewBed =
+        await ManageBedsModel.findOneAndUpdate(
+          { bedId: emergencyBedNo },
+          { bedAvailableOrNot: false }
+        );
+
+      if (!bedAvailabilityUpdateForNewBed) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update new bed availability" });
+      }
+
+      return res.status(200).json({ message: "Bed Changed Successfully" });
     } catch (error) {
-      // console.log(error);
-      res.status(500).json("Internal Server Error");
+      console.error("Error in bed change:", error);
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
-
 Router.delete("/EmergencyPatient-DELETE/:ID", async (req, res) => {
   const id = req.params.ID;
 
