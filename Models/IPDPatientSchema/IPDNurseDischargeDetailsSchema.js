@@ -2,6 +2,35 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
+const TreatmentGivenInBriefSchema = new Schema({
+  date: {
+    type: Date,
+  },
+  operation: {
+    type: String,
+  },
+  indications: {
+    type: String,
+  },
+  surgeon: {
+    type: String,
+  },
+  assistants: {
+    type: String,
+  },
+  nurse: {
+    type: String,
+  },
+  anaesthetist: {
+    type: String,
+  },
+  anaesthesia: {
+    type: String,
+  },
+  implantDetails: {
+    type: String,
+  },
+});
 const IPDNurseDischargeDetailsSchema = new Schema(
   {
     mainId: {
@@ -25,31 +54,10 @@ const IPDNurseDischargeDetailsSchema = new Schema(
     conditionDuringDischarge: {
       type: String,
     },
+    TreatmentGivenInBrief: {
+      type: [TreatmentGivenInBriefSchema],
+    },
     date: {
-      type: String,
-    },
-    operations: {
-      type: String,
-    },
-    indications: {
-      type: String,
-    },
-    surgeon: {
-      type: String,
-    },
-    assistants: {
-      type: String,
-    },
-    nurse: {
-      type: String,
-    },
-    anaesthetist: {
-      type: String,
-    },
-    anaesthesia: {
-      type: String,
-    },
-    implantDetails: {
       type: String,
     },
     isDeleted: {

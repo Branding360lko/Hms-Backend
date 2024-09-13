@@ -307,16 +307,11 @@ Router.put(
       investigationORProcedure,
       conditionDuringDischarge,
       date,
-      operations,
-      indications,
-      surgeon,
-      assistants,
-      nurse,
-      anaesthetist,
-      anaesthesia,
-      implantDetails,
+      TreatmentGivenInBrief,
     } = req.body;
     try {
+      const parsedTreatmentGivenInBrief = JSON.parse(TreatmentGivenInBrief);
+
       const updatedNurseDischargeDetailsUpdated =
         await IPDNurseDischargeDetailsModel.findOneAndUpdate(
           {
@@ -334,24 +329,9 @@ Router.put(
               ? conditionDuringDischarge
               : IPDNurseDischargeDetailsModel.conditionDuringDischarge,
             date: date ? date : IPDNurseDischargeDetailsModel.date,
-            operations: operations
-              ? operations
-              : IPDNurseDischargeDetailsModel.operations,
-            indications: indications
-              ? indications
-              : IPDNurseDischargeDetailsModel.indications,
-            surgeon: surgeon ? surgeon : IPDNurseDischargeDetailsModel.surgeon,
-            assistants: assistants
-              ? assistants
-              : IPDNurseDischargeDetailsModel.assistants,
-            nurse: nurse ? nurse : IPDNurseDischargeDetailsModel.nurse,
-            anaesthetist: anaesthetist
-              ? anaesthetist
-              : IPDNurseDischargeDetailsModel.anaesthetist,
-            anaesthesia: anaesthesia
-              ? anaesthesia
-              : IPDNurseDischargeDetailsModel.anaesthesia,
-            implantDetails: implantDetails,
+            TreatmentGivenInBrief: parsedTreatmentGivenInBrief
+              ? parsedTreatmentGivenInBrief
+              : IPDNurseDischargeDetailsModel.TreatmentGivenInBrief,
           }
         );
 
@@ -380,6 +360,7 @@ Router.put(
       }
     } catch (error) {
       console.log(error);
+
       res.status(500).json("Internal Server Error");
     }
   }

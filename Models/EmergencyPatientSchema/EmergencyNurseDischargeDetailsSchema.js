@@ -2,6 +2,36 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
+const TreatmentGivenInBriefSchema = new Schema({
+  date: {
+    type: Date,
+  },
+  operation: {
+    type: String,
+  },
+  indications: {
+    type: String,
+  },
+  surgeon: {
+    type: String,
+  },
+  assistants: {
+    type: String,
+  },
+  nurse: {
+    type: String,
+  },
+  anaesthetist: {
+    type: String,
+  },
+  anaesthesia: {
+    type: String,
+  },
+  implantDetails: {
+    type: String,
+  },
+});
+
 const EmergencyNurseDischargeDetailsSchema = new Schema(
   {
     mainId: {
@@ -28,29 +58,8 @@ const EmergencyNurseDischargeDetailsSchema = new Schema(
     date: {
       type: String,
     },
-    operations: {
-      type: String,
-    },
-    indications: {
-      type: String,
-    },
-    surgeon: {
-      type: String,
-    },
-    assistants: {
-      type: String,
-    },
-    nurse: {
-      type: String,
-    },
-    anaesthetist: {
-      type: String,
-    },
-    anaesthesia: {
-      type: String,
-    },
-    implantDetails: {
-      type: String,
+    TreatmentGivenInBrief: {
+      type: [TreatmentGivenInBriefSchema],
     },
     isDeleted: {
       type: Boolean,

@@ -209,16 +209,10 @@ Router.put(
       investigationORProcedure,
       conditionDuringDischarge,
       date,
-      operations,
-      indications,
-      surgeon,
-      assistants,
-      nurse,
-      anaesthetist,
-      anaesthesia,
-      implantDetails,
+      TreatmentGivenInBrief,
     } = req.body;
     try {
+      const parsedTreatmentGivenInBrief = JSON.parse(TreatmentGivenInBrief);
       const updatedNurseDischargeDetailsUpdated =
         await EmergencyNurseDischargeDetailsModel.findOneAndUpdate(
           {
@@ -238,28 +232,10 @@ Router.put(
               ? conditionDuringDischarge
               : EmergencyNurseDischargeDetailsModel.conditionDuringDischarge,
             date: date ? date : EmergencyNurseDischargeDetailsModel.date,
-            operations: operations
-              ? operations
-              : EmergencyNurseDischargeDetailsModel.operations,
-            indications: indications
-              ? indications
-              : EmergencyNurseDischargeDetailsModel.indications,
-            surgeon: surgeon
-              ? surgeon
-              : EmergencyNurseDischargeDetailsModel.surgeon,
-            assistants: assistants
-              ? assistants
-              : EmergencyNurseDischargeDetailsModel.assistants,
-            nurse: nurse ? nurse : EmergencyNurseDischargeDetailsModel.nurse,
-            anaesthetist: anaesthetist
-              ? anaesthetist
-              : EmergencyNurseDischargeDetailsModel.anaesthetist,
-            anaesthesia: anaesthesia
-              ? anaesthesia
-              : EmergencyNurseDischargeDetailsModel.anaesthesia,
-            implantDetails: implantDetails
-              ? implantDetails
-              : EmergencyNurseDischargeDetailsModel.implantDetails,
+
+            TreatmentGivenInBrief: parsedTreatmentGivenInBrief
+              ? parsedTreatmentGivenInBrief
+              : EmergencyNurseDischargeDetailsModel.TreatmentGivenInBrief,
           }
         );
 

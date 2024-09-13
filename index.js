@@ -12,6 +12,7 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 
 const cookieParser = require("cookie-parser");
+const redisClient = require("./redisClient");
 
 const PORT = process.env.PORT;
 const app = express();
@@ -121,5 +122,3 @@ app.get("/home", (req, res) => {
 app.listen(PORT, () => {
   console.log(`MongoDb server is running at port number ${PORT}`);
 });
-
-// this is latest code

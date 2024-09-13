@@ -43,7 +43,11 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
+  const searchTerm = req.query.search || "";
+  const Page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
   try {
+    const searchRegex = new RegExp(searchTerm, "i");
     const testPatients = await TestPatientModel.aggregate([
       {
         $lookup: {
@@ -71,10 +75,49 @@ Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
           path: "$DoctorData",
         },
       },
-    ]).sort({
-      createdAt: -1,
+    ])
+      .sort({
+        createdAt: -1,
+      })
+      .skip(Page * limit)
+      .limit(limit);
+    const totalDocuments = await TestPatientModel.aggregate([
+      {
+        $lookup: {
+          from: "patients",
+          localField: "testPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$patientData",
+        },
+      },
+
+      {
+        $match: {
+          $or: [
+            { "patientData.patientName": { $regex: searchRegex } },
+            { "patientData.patientPhone": { $regex: searchRegex } },
+            { "patientData.patientPhone2": { $regex: searchRegex } },
+            { "patientData.patientId": { $regex: searchRegex } },
+          ],
+        },
+      },
+
+      {
+        $count: "totalDocument",
+      },
+    ]);
+    return res.status(200).json({
+      testPatients,
+      totalDocuments: totalDocuments?.[0]?.totalDocument,
+      totalPages: Math.ceil(totalDocuments?.[0]?.totalDocument / limit)
+        ? Math.ceil(totalDocuments?.[0]?.totalDocument / limit)
+        : 0,
     });
-    return res.status(200).json(testPatients);
   } catch (error) {
     console.log(error);
 
@@ -168,12 +211,12 @@ Router.post("/TestOfPatient-POST", upload.none(), async (req, res) => {
   }
 });
 
-Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
+Router.put("/TestOfPatient-PUT/:ID", upload.none(), async (req, res) => {
   const id = req.params.ID;
   const {
     testPatientId,
     prescribedByDoctor,
-    test,
+
     patientType,
     note,
     total,
@@ -181,6 +224,8 @@ Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
   } = req.body;
 
   try {
+    const test = req.body.test ? JSON.parse(req.body.test) : [];
+    console.log(test);
     const updatedTestPatient = await TestPatientModel.findOneAndUpdate(
       { mainId: id },
       {
@@ -190,7 +235,16 @@ Router.put("/TestOfPatient-PUT/:ID", async (req, res) => {
         prescribedByDoctor: prescribedByDoctor
           ? prescribedByDoctor
           : TestPatientModel.prescribedByDoctor,
-        test: test ? test : TestPatientModel.test,
+        test:
+          test?.length > 0
+            ? test.map((tst) => ({
+                Name: tst.name,
+
+                Price: tst.price,
+                Quantity: tst.quantity,
+                Total: tst.total,
+              }))
+            : TestPatientModel.test,
         patientType: patientType ? patientType : TestPatientModel.patientType,
         note: note ? note : TestPatientModel.note,
         total: total ? total : TestPatientModel.total,
