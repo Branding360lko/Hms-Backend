@@ -43,9 +43,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ storage, fileFilter });
 
 Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
-  const searchTerm = req.query.search || "";
   const Page = parseInt(req.query.page) || 0;
   const limit = parseInt(req.query.limit) || 10;
+  const searchTerm = req.query.search || "";
   try {
     const searchRegex = new RegExp(searchTerm, "i");
     const testPatients = await TestPatientModel.aggregate([
@@ -73,6 +73,16 @@ Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
       {
         $unwind: {
           path: "$DoctorData",
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { "patientData.patientName": { $regex: searchRegex } },
+            { "patientData.patientPhone": { $regex: searchRegex } },
+            { "patientData.patientPhone2": { $regex: searchRegex } },
+            { "patientData.patientId": { $regex: searchRegex } },
+          ],
         },
       },
     ])
