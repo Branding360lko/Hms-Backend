@@ -29,6 +29,27 @@ const chargesSubSchema = new Schema(
   { timestamps: true }
 );
 
+const bedChargesSchema = new Schema(
+  {
+    bedId: String,
+    days: Number,
+    totalBedCharges: Number,
+    totalNursingCharges: Number,
+    totalEMOCharges: Number,
+    totalBioWasteCharges: Number,
+    totalSanitizationCharges: Number,
+    subTotal: Number,
+  },
+  { timestamps: true }
+);
+
+const totalBedsSchema = new Schema(
+  {
+    bedId: String,
+  },
+  { timestamps: true }
+);
+
 const IPDPatientBalanceSchema = new Schema({
   balanceID: {
     type: String,
@@ -41,9 +62,12 @@ const IPDPatientBalanceSchema = new Schema({
   ipdPatientRegId: {
     type: String,
   },
+  currentBed: String,
+  beds: [totalBedsSchema],
   balance: [balanceSubSchema],
   charges: [chargesSubSchema],
   labTestCharges: [chargesSubSchema],
+  bedCharges: [bedChargesSchema],
 });
 
 const IPDPatientBalanceModel = mongoose.model(

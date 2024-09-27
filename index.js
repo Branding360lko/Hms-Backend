@@ -115,6 +115,12 @@ app.use(
   "/api/",
   require("./Routes/DropdownSearchDataRoutes/DropdownSearchDataRoutes")
 );
+app.use(
+  "/api/",
+  require("./Routes/AdmissionChargesRoutes/AdmissionChargesRoutes")
+);
+app.use("/api/", require("./Routes/VitalCareRoutes/VitalCareRoutes"));
+app.use("/api/", require("./Routes/IPDRoutes/IPDVitalRoutes"));
 app.get("/home", (req, res) => {
   res.send("this is hms main page");
 });

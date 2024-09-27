@@ -129,8 +129,6 @@ Router.get("/TestOfPatient-GET-ALL", async (req, res) => {
         : 0,
     });
   } catch (error) {
-    console.log(error);
-
     res.status(500).json("Internal Server Error");
   }
 });

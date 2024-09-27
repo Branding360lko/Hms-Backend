@@ -36,6 +36,7 @@ const IPDSchema = new Schema(
         },
       },
     ],
+
     Symptoms: {
       type: String,
     },

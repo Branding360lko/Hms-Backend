@@ -81,6 +81,10 @@ const IPDPatientSchema = new Schema(
     ipdPatientRemainingAmount: {
       type: Number,
     },
+    ipdAdmissionCharge: {
+      type: Number,
+      default: 0,
+    },
     ipdPaymentMode: {
       type: String,
     },

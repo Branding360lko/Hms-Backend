@@ -365,6 +365,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
       {
         $unwind: {
           path: "$ipdPatientDetails",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -378,6 +379,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
       {
         $unwind: {
           path: "$bedDetails",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -389,11 +391,23 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
         },
       },
       {
+        $unwind: {
+          path: "$doctorData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $lookup: {
           from: "doctors",
           localField: "AdditionalDoctorId",
           foreignField: "_id",
           as: "additionalDoctorData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$additionalDoctorData",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -405,11 +419,23 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
         },
       },
       {
+        $unwind: {
+          path: "$ReferedDoctor",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $lookup: {
           from: "doctorprofessionaldetails",
           localField: "doctorData.doctorId",
           foreignField: "doctorId",
           as: "doctorFeesDatails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$doctorFeesDatails",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -421,11 +447,23 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
         },
       },
       {
+        $unwind: {
+          path: "$additionalDoctorFeesDatails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $lookup: {
           from: "doctorprofessionaldetails",
           localField: "ReferedDoctor.doctorId",
           foreignField: "doctorId",
           as: "RefereddoctorFeesDatails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$RefereddoctorFeesDatails",
+          preserveNullAndEmptyArrays: true,
         },
       },
 
@@ -435,7 +473,10 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           VisitDateTime: 1,
           doctorData: 1,
           ReferedDoctor: 1,
+          additionalDoctorData: 1,
+          additionalDoctorFeesDatails: 1,
           submittedBy: 1,
+          bedDetails: 1,
           DailyMedicinePriceTotal: { $sum: "$medicine.Price" },
           DailyTestPriceTotal: { $sum: "$test.Price" },
           DailyDoctorVisitChargeBasedOnBed: {
@@ -443,31 +484,13 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
               branches: [
                 {
                   case: {
-                    $eq: [
-                      {
-                        $concat: [
-                          "$bedDetails.bedType",
-                          "",
-                          "$bedDetails.bedSubType",
-                        ],
-                      },
-                      "SEMI-PRIVATE",
-                    ],
+                    $eq: ["$bedDetails.bedType", "SEMI-PRIVATE"],
                   },
                   then: "$doctorFeesDatails.doctorSemiPrivateFee",
                 },
                 {
                   case: {
-                    $eq: [
-                      {
-                        $concat: [
-                          "$bedDetails.bedType",
-                          "",
-                          "$bedDetails.bedSubType",
-                        ],
-                      },
-                      "EMERGENCY",
-                    ],
+                    $eq: ["$bedDetails.bedType", "EMERGENCY"],
                   },
                   then: "$doctorFeesDatails.doctorEmergencyFee",
                 },
@@ -477,7 +500,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -492,7 +515,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -507,7 +530,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -522,7 +545,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -537,7 +560,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -555,31 +578,13 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
               branches: [
                 {
                   case: {
-                    $eq: [
-                      {
-                        $concat: [
-                          "$bedDetails.bedType",
-                          "",
-                          "$bedDetails.bedSubType",
-                        ],
-                      },
-                      "SEMI-PRIVATE",
-                    ],
+                    $eq: ["$bedDetails.bedType", "SEMI-PRIVATE"],
                   },
                   then: "$RefereddoctorFeesDatails.doctorSemiPrivateFee",
                 },
                 {
                   case: {
-                    $eq: [
-                      {
-                        $concat: [
-                          "$bedDetails.bedType",
-                          "",
-                          "$bedDetails.bedSubType",
-                        ],
-                      },
-                      "EMERGENCY",
-                    ],
+                    $eq: ["$bedDetails.bedType", "EMERGENCY"],
                   },
                   then: "$RefereddoctorFeesDatails.doctorEmergencyFee",
                 },
@@ -589,7 +594,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -604,7 +609,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -619,7 +624,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -634,7 +639,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -649,7 +654,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -667,31 +672,13 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
               branches: [
                 {
                   case: {
-                    $eq: [
-                      {
-                        $concat: [
-                          "$bedDetails.bedType",
-                          "",
-                          "$bedDetails.bedSubType",
-                        ],
-                      },
-                      "SEMI-PRIVATE",
-                    ],
+                    $eq: ["$bedDetails.bedType", "SEMI-PRIVATE"],
                   },
                   then: "$additionalDoctorFeesDatails.doctorSemiPrivateFee",
                 },
                 {
                   case: {
-                    $eq: [
-                      {
-                        $concat: [
-                          "$bedDetails.bedType",
-                          "",
-                          "$bedDetails.bedSubType",
-                        ],
-                      },
-                      "EMERGENCY",
-                    ],
+                    $eq: ["$bedDetails.bedType", "EMERGENCY"],
                   },
                   then: "$additionalDoctorFeesDatails.doctorEmergencyFee",
                 },
@@ -701,7 +688,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -716,7 +703,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -731,7 +718,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -746,7 +733,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -761,7 +748,7 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
                       {
                         $concat: [
                           "$bedDetails.bedType",
-                          "",
+                          " ",
                           "$bedDetails.bedSubType",
                         ],
                       },
@@ -802,31 +789,39 @@ Router.get("/get-one-ipd-data-total/:Id", async (req, res) => {
           DailyMedicinePriceTotal: 1,
           DailyTestPriceTotal: 1,
           visitDate: 1,
+          submittedBy: 1,
           // doctorFeesDatails: 1,
           // RefereddoctorFeesDatails: 1,
-          DailyDoctorVisitChargeBasedOnBed: 1,
-          DailyReferDoctorVisitChargeBasedOnBed: 1,
-          DailyAdditionalDoctorVisitChargeBasedOnBed: 1,
+          DailyDoctorVisitChargeBasedOnBed: {
+            $ifNull: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+          },
+          DailyReferDoctorVisitChargeBasedOnBed: {
+            $ifNull: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
+          },
+          DailyAdditionalDoctorVisitChargeBasedOnBed: {
+            $ifNull: ["$DailyAdditionalDoctorVisitChargeBasedOnBed", 0],
+          },
           doctorVisitCharge: {
             $cond: {
-              if: { $ne: ["$DailyReferDoctorVisitChargeBasedOnBed", []] },
-              then: {
-                $arrayElemAt: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
+              if: {
+                $gt: [
+                  { $toDouble: "$DailyReferDoctorVisitChargeBasedOnBed" },
+                  0,
+                ],
               },
+              then: { $toDouble: "$DailyReferDoctorVisitChargeBasedOnBed" },
               else: {
                 $cond: {
-                  if: { $eq: ["$submittedBy", "Additional Doctor"] },
+                  if: {
+                    $eq: [{ $toLower: "$submittedBy" }, "additional doctor"],
+                  },
                   then: {
-                    $arrayElemAt: [
-                      "$DailyAdditionalDoctorVisitChargeBasedOnBed",
-                      0,
-                    ],
+                    $toDouble: "$DailyAdditionalDoctorVisitChargeBasedOnBed",
                   },
                   else: {
-                    $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+                    $toDouble: "$DailyDoctorVisitChargeBasedOnBed",
                   },
                 },
-                // $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0]
               },
             },
           },
