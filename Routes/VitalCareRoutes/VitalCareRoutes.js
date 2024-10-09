@@ -4,7 +4,7 @@ const Router = express.Router();
 require("../../DB/connection");
 
 const VitalCare = require("../../Models/VitalCareSchema/VitalCareSchema");
-
+const { upload } = require('../../utils/upload')
 const generateUniqueId = () => {
   const date = new Date();
   const year = date.getFullYear().toString();
@@ -21,7 +21,7 @@ const generateUniqueId = () => {
 
 Router.get("/get-all-vital-care", async (req, res) => {
   try {
-    const vitalCareData = await VitalCare.find();
+    const vitalCareData = await VitalCare.find().sort({ createdAt: -1 });
     if (vitalCareData.length === 0 || !vitalCareData) {
       return res.status(200).json({ message: "No Data Found" });
     }
@@ -32,7 +32,7 @@ Router.get("/get-all-vital-care", async (req, res) => {
     return res.status(500).json("internal server error");
   }
 });
-Router.post("/add-vital-care", async (req, res) => {
+Router.post("/add-vital-care", upload.none(), async (req, res) => {
   const { vitalCareName, hourlyCharges } = req.body;
   try {
     if (!(vitalCareName || hourlyCharges)) {
@@ -68,7 +68,7 @@ Router.get("/get-one-vital-care/:vitalCareId", async (req, res) => {
     return res.status(500).json("internal server error");
   }
 });
-Router.put("/update-one-vital-care/:vitalCareId", async (req, res) => {
+Router.put("/update-one-vital-care/:vitalCareId", upload.none(), async (req, res) => {
   const vitalCareId = req.params.vitalCareId;
   const { vitalCareName, hourlyCharges } = req.body;
   try {

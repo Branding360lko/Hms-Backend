@@ -165,7 +165,7 @@ Router.post("/AdminLogin", async (req, res) => {
     res.cookie("adminToken", token, {
       withCredentials: true,
       httpOnly: false,
-      maxAge: 7200 * 1000 * 1000,
+      maxAge: 8 * 60 * 60 * 1000,
     });
 
     return res.status(200).json({

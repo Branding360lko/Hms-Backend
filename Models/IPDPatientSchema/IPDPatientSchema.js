@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
-
 const Schema = mongoose.Schema;
-
 const IPDPatientSchema = new Schema(
   // {
   //   mainId: {
@@ -102,6 +100,19 @@ const IPDPatientSchema = new Schema(
     },
     ipdPatientNotes: {
       type: String,
+    },
+    ipdPatientIsInsured: {
+      type: Boolean,
+      required: true,
+      default: false
+    },
+    ipdPatientRefundPercentage: {
+      type: Number,
+      default: 0
+    },  
+      ipdPatientRefundedAmount: {
+      type: Number,
+      default: 0
     },
     ipdPatientNurseRequestForDischarge: {
       type: Boolean,

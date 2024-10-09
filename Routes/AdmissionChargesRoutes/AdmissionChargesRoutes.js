@@ -4,7 +4,7 @@ const Router = express.Router();
 require("../../DB/connection");
 
 const AdmissionChargeModel = require("../../Models/AdmissionChargesSchema/AdmissionChargesSchema");
-
+const { upload } = require('../../utils/upload')
 const generateUniqueId = () => {
   const date = new Date();
   const year = date.getFullYear().toString();
@@ -19,7 +19,7 @@ const generateUniqueId = () => {
   return uniqueId;
 };
 
-Router.post("/add-admission-charge", async (req, res) => {
+Router.post("/add-admission-charge", upload.none(), async (req, res) => {
   const { admissionType, admissionFees } = req.body;
   try {
     if (!admissionType || !admissionFees) {
@@ -48,7 +48,7 @@ Router.post("/add-admission-charge", async (req, res) => {
 });
 Router.get("/get-all-admission-charges", async (req, res) => {
   try {
-    const admissionChargeData = await AdmissionChargeModel.find();
+    const admissionChargeData = await AdmissionChargeModel.find().sort({ createdAt: -1 });
     if (!admissionChargeData) {
       return res.status(403).json({
         message: "Something Went Wrong While Finding Data, Try After SomeTime",
@@ -82,7 +82,7 @@ Router.get("/get-one-admission-charge/:admissionId", async (req, res) => {
     return res.status(500).json("internal server error");
   }
 });
-Router.put("/update-one-admission-charge/:admissionId", async (req, res) => {
+Router.put("/update-one-admission-charge/:admissionId", upload.none(), async (req, res) => {
   const admissionId = req.params.admissionId;
   const { admissionType, admissionFees } = req.body;
   try {

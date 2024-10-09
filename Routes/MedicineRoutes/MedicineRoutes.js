@@ -20,7 +20,7 @@ const upload = multer({ storage });
 
 Router.get("/GET-ALL-Medicine", async (req, res) => {
   try {
-    const medicine = await Medicine.find();
+    const medicine = await Medicine.find().sort({ createdAt: -1 });
     if (!medicine) {
       res.status(204).json({ message: "No Data Exits" });
     }
@@ -99,7 +99,7 @@ Router.post(
     }
   }
 );
-Router.post("/add-medicine", async (req, res) => {
+Router.post("/add-medicine", upload.none(), async (req, res) => {
   const {
     Name,
 
@@ -133,7 +133,7 @@ Router.post("/add-medicine", async (req, res) => {
       .status(201)
       .json({ message: "SuccessFully Data Created", data: medicineData });
   } catch (error) {
-    console.log(error);
+
     res.status(500).json("Something went wrong");
   }
 });
@@ -153,18 +153,22 @@ Router.get("/get-one-medicine/:Id", async (req, res) => {
       message: "Medicine Data Fetch Successfully",
       data: medicineData,
     });
-  } catch (error) {}
+  } catch (error) {
+
+    res.status(500).json("Something went wrong");
+  }
 });
-Router.put("/update-one-medicine-data/:Id", async (req, res) => {
+Router.put("/update-one-medicine-data/:Id", upload.none(), async (req, res) => {
   const { Id } = req.params;
   if (!Id) {
     return req.status(403).json("No medicine Id is Provided");
   }
-  const { BATCH, EXPIRY, QTY, Mrp, RATE } = req.body;
+  const { Name, BATCH, EXPIRY, QTY, Mrp, RATE } = req.body;
   try {
     const medicineData = await Medicine.findByIdAndUpdate(
       { _id: Id },
       {
+        Name,
         BATCH,
         EXPIRY,
         QTY,
@@ -186,5 +190,25 @@ Router.put("/update-one-medicine-data/:Id", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+Router.delete("/delete-one-medicine/:Id", async (req, res) => {
+  const { Id } = req.params;
+  if (!Id) {
+    return req.status(403).json("No medicine Id is Provided");
+  }
+  try {
+    const medicineData = await Medicine.findByIdAndDelete({ _id: Id });
+    if (!medicineData) {
+      return res
+        .status(403)
+        .json({ message: "No medicine Find By This Medicine Id" });
+    }
+    return res.status(200).json({
+      message: "Medicine Deleted Successfully",
+      data: medicineData,
+    });
+  } catch (error) {
 
+    res.status(500).json("Something went wrong");
+  }
+});
 module.exports = Router;

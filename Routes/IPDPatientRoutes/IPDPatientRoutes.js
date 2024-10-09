@@ -18,7 +18,7 @@ const ManageBedsModel = require("../../Models/ManageBedsSchema/ManageBedsSchema"
 const IPDNurseDischargeDetailsModel = require("../../Models/IPDPatientSchema/IPDNurseDischargeDetailsSchema");
 
 const IPD = require("../../Models/IPDSchema/IPDSchema");
-
+const { upload } = require("../../utils/upload");
 const generateUniqueId = () => {
   const date = new Date();
   const year = date.getFullYear().toString();
@@ -331,12 +331,31 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "ipdreturnedmedicines",
+          localField: "mainId",
+          foreignField: "ipdPatientMainId",
+          as: "ipdPatientReturnMedicine",
+        },
+      },
+      {
+        $unwind: {
+          path: "$ipdPatientReturnMedicine",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $project: {
           _id: "$mainId",
           ipdBedNo: 1,
           ipdPatientDischarged: 1,
           createdAt: 1,
           ipdAdmissionCharge: 1,
+          ipdPatientReturnMedicine: 1,
+          ipdPatientIsInsured: { $ifNull: ["$ipdPatientIsInsured", false] },
+          ipdPatientRefundPercentage: {
+            $ifNull: ["$ipdPatientRefundPercentage", 0],
+          },
           ipdPatientId: "$IPDPatientMEDDOCLABData.ipdPatientData",
           VisitDateTime: "$IPDPatientMEDDOCLABData.VisitDateTime",
           submittedBy: "$IPDPatientMEDDOCLABData.submittedBy",
@@ -639,6 +658,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$createdAt" },
           ipdAdmissionCharge: { $first: "$ipdAdmissionCharge" },
           visitDate: { $first: "$VisitDateTime" },
@@ -698,6 +720,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: 1,
           ipdBedNo: 1,
           ipdPatientDischarged: 1,
+          ipdPatientRefundPercentage: 1,
+          ipdPatientReturnMedicine: 1,
+          ipdPatientIsInsured: 1,
           creationDate: 1,
           totalDailyMedicinePriceTotal: 1,
           totalDailyTestPriceTotal: 1,
@@ -757,6 +782,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$creationDate" },
           totalDailyMedicinePriceTotal: {
             $first: "$totalDailyMedicinePriceTotal",
@@ -787,6 +815,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$IPDPatientBalanceData.balanceID" },
           uhid: { $first: "$IPDPatientBalanceData.uhid" },
@@ -813,6 +844,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
@@ -847,6 +881,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
@@ -891,6 +928,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
@@ -938,6 +978,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           _id: "$_id",
           ipdBedNo: { $first: "$ipdBedNo" },
           ipdPatientDischarged: { $first: "$ipdPatientDischarged" },
+          ipdPatientRefundPercentage: { $first: "$ipdPatientRefundPercentage" },
+          ipdPatientReturnMedicine: { $first: "$ipdPatientReturnMedicine" },
+          ipdPatientIsInsured: { $first: "$ipdPatientIsInsured" },
           creationDate: { $first: "$creationDate" },
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
@@ -1051,6 +1094,9 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
         $project: {
           balanceID: 1,
           uhid: 1,
+          ipdPatientRefundPercentage: 1,
+          ipdPatientIsInsured: 1,
+          ipdPatientReturnMedicine: 1,
           ipdPatientObjectId: 1,
           ipdPatientRegId: 1,
           totalAddedBalance: 1,
@@ -1114,6 +1160,10 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           balanceID: 1,
           uhid: 1,
           patientName: 1,
+          ipdPatientRefundPercentage: 1,
+          ipdPatientReturnMedicine: "$ipdPatientReturnMedicine.Total",
+          ipdPatientReturnMedicineDetails: "$ipdPatientReturnMedicine",
+          ipdPatientIsInsured: 1,
           ipdPatientObjectId: 1,
           ipdPatientRegId: 1,
           totalAddedBalance: 1,
@@ -1129,11 +1179,39 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           totalPreviousDays: 1,
           days: 1,
           bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
-          nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
-          EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
-          bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+          nursingCharges: {
+            $cond: {
+              if: { $eq: ["$ipdPatientIsInsured", false] },
+              then: { $multiply: ["$days", "$beddata.nursingCharges"] },
+
+              else: 0,
+            },
+          },
+          EMOCharges: {
+            $cond: {
+              if: { $eq: ["$ipdPatientIsInsured", false] },
+              then: { $multiply: ["$days", "$beddata.EMOCharges"] },
+
+              else: 0,
+            },
+          },
+          bioWasteCharges: {
+            $cond: {
+              if: { $eq: ["$ipdPatientIsInsured", false] },
+              then: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+
+              else: 0,
+            },
+          },
           sanitizationCharges: {
-            $multiply: ["$days", "$beddata.sanitizationCharges"],
+            $cond: {
+              if: { $eq: ["$ipdPatientIsInsured", false] },
+              then: {
+                $multiply: ["$days", "$beddata.sanitizationCharges"],
+              },
+
+              else: 0,
+            },
           },
         },
       },
@@ -1150,44 +1228,88 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
             ],
           },
           finalTotal: {
-            $add: [
-              "$totalCharges",
-              "$totalLabTestCharges",
-              "$bedCharges",
-              "$nursingCharges",
-              "$EMOCharges",
-              "$bioWasteCharges",
-              "$sanitizationCharges",
-              "$overallTotalMedicinePrice",
-              "$overallTotalTestPrice",
-              "$ipdAdmissionCharge",
-              "$overallDoctorVisitCharge",
-              "$previousBedCharges",
+            $subtract: [
+              {
+                $add: [
+                  "$totalCharges",
+                  "$totalLabTestCharges",
+                  "$bedCharges",
+                  "$overallTotalMedicinePrice",
+                  "$overallTotalTestPrice",
+                  "$ipdAdmissionCharge",
+                  "$overallDoctorVisitCharge",
+                  "$previousBedCharges",
+                  "$nursingCharges",
+                  "$EMOCharges",
+                  "$bioWasteCharges",
+                  "$sanitizationCharges",
+                ],
+              },
+              { $ifNull: ["$ipdPatientReturnMedicine", 0] },
             ],
           },
           remainingBalance: {
             $subtract: [
               "$totalAddedBalance",
               {
-                $add: [
-                  "$totalCharges",
-                  "$totalLabTestCharges",
-                  "$bedCharges",
-                  "$nursingCharges",
-                  "$EMOCharges",
-                  "$bioWasteCharges",
-                  "$sanitizationCharges",
-                  "$overallTotalMedicinePrice",
-                  "$overallTotalTestPrice",
-                  "$ipdAdmissionCharge",
-                  "$overallDoctorVisitCharge",
-                  "$previousBedCharges",
+                $subtract: [
+                  {
+                    $add: [
+                      "$totalCharges",
+                      "$totalLabTestCharges",
+                      "$bedCharges",
+                      "$overallTotalMedicinePrice",
+                      "$overallTotalTestPrice",
+                      "$ipdAdmissionCharge",
+                      "$overallDoctorVisitCharge",
+                      "$previousBedCharges",
+                      "$nursingCharges",
+                      "$EMOCharges",
+                      "$bioWasteCharges",
+                      "$sanitizationCharges",
+                    ],
+                  },
+                  { $ifNull: ["$ipdPatientReturnMedicine", 0] },
                 ],
               },
             ],
           },
         },
       },
+
+      {
+        $addFields: {
+          discountAmount: {
+            $divide: [
+              {
+                $multiply: [
+                  "$ipdPatientRefundPercentage",
+                  { $toDouble: "$finalTotal" },
+                ],
+              },
+              100,
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          remainingBalance: {
+            $add: ["$remainingBalance", "$discountAmount"],
+          },
+        },
+      },
+      {
+        $addFields: {
+          finalAmountAfterDiscount: {
+            $subtract: [
+              { $toDouble: "$finalTotal" },
+              { $toDouble: "$discountAmount" },
+            ],
+          },
+        },
+      },
+
       {
         $sort: { _id: -1 },
       },
@@ -1821,6 +1943,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
             allBeds: 1,
             singleBedData: 1,
             ipdPatientDischarged: 1,
+            ipdPatientIsInsured: 1,
             createdAt: 1,
             dischargeData: 1,
             days: {
@@ -1853,10 +1976,10 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
         {
           $project: {
             bedData: 1,
-            // beddata: 1,
             bedCharges: 1,
             singleBedData: 1,
             days: 1,
+            ipdPatientIsInsured: { $ifNull: ["$ipdPatientIsInsured", false] },
             totalDays: {
               $add: [
                 {
@@ -1972,97 +2095,48 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
                 ],
               },
             },
-            // bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
-            // nursingTotalCharges: {
-            //   $multiply: ["$days", "$bedData.nursingCharges"],
-            // },
-            // EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
-            // bioWasteTotalCharges: {
-            //   $multiply: ["$days", "$bedData.bioWasteCharges"],
-            // },
-            // sanitizationTotalCharges: {
-            //   $multiply: ["$days", "$bedData.sanitizationCharges"],
-            // },
+          },
+        },
+        {
+          $project: {
+            bedData: 1,
+            bedCharges: 1,
+            singleBedData: 1,
+            days: 1,
+            totalDays: 1,
+            bedTotalCharges: 1,
+            ipdPatientIsInsured:1,
+            nursingTotalCharges: {
+              $cond: {
+                if: { $eq: ["$ipdPatientIsInsured", false] },
+                then: "$nursingTotalCharges",
+                else: 0,
+              },
+            },
+            EMOTotalCharges: {
+              $cond: {
+                if: { $eq: ["$ipdPatientIsInsured", false] },
+                then: "$EMOTotalCharges",
+                else: 0,
+              },
+            },
+            bioWasteTotalCharges: {
+              $cond: {
+                if: { $eq: ["$ipdPatientIsInsured", false] },
+                then: "$bioWasteTotalCharges",
+                else: 0,
+              },
+            },
+            sanitizationTotalCharges: {
+              $cond: {
+                if: { $eq: ["$ipdPatientIsInsured", false] },
+                then: "$sanitizationTotalCharges",
+                else: 0,
+              },
+            },
           },
         },
       ]);
-
-      // console.log(autoChargeCalculation);
-
-      // const totalTimeCalculation = (time) => {
-      //   let pastDate = new Date(time);
-      //   let presentDate = new Date();
-
-      //   let differenceInTime = presentDate.getTime() - pastDate.getTime();
-
-      //   let differenceInDays = Math.round(
-      //     differenceInTime / (1000 * 3600 * 24)
-      //   );
-
-      //   return differenceInDays + 1;
-      // };
-
-      // const totalChargesCalculation = (creationTime, charges) => {
-      //   let time = totalTimeCalculation(creationTime);
-
-      //   let totalCharge = time * charges;
-
-      //   return totalCharge;
-      // };
-
-      // const ManageBedsPriceData = await ManageBedsModel.findOne({
-      //   bedId: IPDPatient.ipdBedNo,
-      // });
-
-      // if (!ManageBedsPriceData) {
-      //   return res.status(404).json("IPD Patient Bed Not Found!");
-      // }
-
-      // if (ManageBedsPriceData) {
-      //   const ipdPatientAutoCharges = {
-      //     numberOfDays: totalTimeCalculation(IPDPatient.createdAt),
-      //     totalbedCharges: totalChargesCalculation(
-      //       IPDPatient.createdAt,
-      //       ManageBedsPriceData.bedCharges
-      //     ),
-      //     totalNurseCharges: totalChargesCalculation(
-      //       IPDPatient.createdAt,
-      //       ManageBedsPriceData.nursingCharges
-      //     ),
-      //     totalEMOCharges: totalChargesCalculation(
-      //       IPDPatient.createdAt,
-      //       ManageBedsPriceData.EMOCharges
-      //     ),
-      //     totalBioWasteCharges: totalChargesCalculation(
-      //       IPDPatient.createdAt,
-      //       ManageBedsPriceData.bioWasteCharges
-      //     ),
-      //     totalSanitizationCharges: totalChargesCalculation(
-      //       IPDPatient.createdAt,
-      //       ManageBedsPriceData.sanitizationCharges
-      //     ),
-      //     subTotal:
-      //       totalChargesCalculation(
-      //         IPDPatient.createdAt,
-      //         ManageBedsPriceData.bedCharges
-      //       ) +
-      //       totalChargesCalculation(
-      //         IPDPatient.createdAt,
-      //         ManageBedsPriceData.nursingCharges
-      //       ) +
-      //       totalChargesCalculation(
-      //         IPDPatient.createdAt,
-      //         ManageBedsPriceData.EMOCharges
-      //       ) +
-      //       totalChargesCalculation(
-      //         IPDPatient.createdAt,
-      //         ManageBedsPriceData.bioWasteCharges
-      //       ) +
-      //       totalChargesCalculation(
-      //         IPDPatient.createdAt,
-      //         ManageBedsPriceData.sanitizationCharges
-      //       ),
-      //   };
 
       return res.status(200).json({
         data: IPDPatientBalance,
@@ -2085,7 +2159,7 @@ Router.post("/IPDPatient-POST", async (req, res) => {
     ipdNurseId,
     ipdPatientNotes,
     ipdDepositAmount,
-
+    ipdPatientIsInsured,
     ipdPaymentMode,
     // ipdWardNo,
     ipdFloorNo,
@@ -2106,6 +2180,7 @@ Router.post("/IPDPatient-POST", async (req, res) => {
       ipdDoctorId: ipdDoctorId,
       ipdNurseId: ipdNurseId,
       ipdDepositAmount: ipdDepositAmount,
+      ipdPatientIsInsured: ipdPatientIsInsured,
 
       // ipdWardNo: ipdWardNo,
       ipdFloorNo: ipdFloorNo,
@@ -2244,6 +2319,45 @@ Router.post("/IPDPatient-POST", async (req, res) => {
     res.status(500).json("Internal Server Error");
   }
 });
+
+Router.put(
+  "/give-Discount-To-IpdPatient/:ipdPatientId",
+  upload.none(),
+  async (req, res) => {
+    const ipdPatientId = req.params.ipdPatientId;
+    const { ipdPatientRefundPercentage } = req.body;
+
+    try {
+      if (!ipdPatientId) {
+        return res.status(404).json({ message: "Patient Id is Not Provided" });
+      }
+      if (
+        !ipdPatientRefundPercentage ||
+        ipdPatientRefundPercentage?.length === 0
+      ) {
+        return res
+          .status(404)
+          .json({ message: "Discount Percentage Not Provided" });
+      }
+      const ipdPatientData = await IPDPatientModel.findOneAndUpdate(
+        {
+          mainId: ipdPatientId,
+        },
+        {
+          ipdPatientRefundPercentage: ipdPatientRefundPercentage,
+        },
+        { new: true }
+      );
+      return res
+        .status(200)
+        .json({ message: "Discount Alloted To Patient", data: ipdPatientData });
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json("Internal Server Error");
+    }
+  }
+);
 
 Router.put("/IPDPatient-PUT/:Id", async (req, res) => {
   const id = req.params.Id;
