@@ -34,7 +34,7 @@ const IPDReturnedMedicineSchema = new Schema(
         },
         date: {
           type: String,
-          require: true,
+          
         
         },
       },

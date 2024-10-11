@@ -47,6 +47,16 @@ Router.post("/add-return-medicine", upload.none(), async (req, res) => {
         Quantity: Number(med?.Quantity),
         Price: Number(med?.Price),
         subTotal: Number(med?.Price) * Number(med?.Quantity),
+        date: (() => {
+          const date = new Date();
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
+          const hours = String(date.getHours()).padStart(2, "0");
+          const minutes = String(date.getMinutes()).padStart(2, "0");
+          const seconds = String(date.getSeconds()).padStart(2, "0");
+          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        })(),
       })),
     });
     const IPDSavedReturnedMedicine = await IPDReturnedMedicine.findById(
@@ -134,22 +144,28 @@ Router.get(
   }
 );
 Router.put(
-  "/update-one-return-medicine/:returnId",
+  "/update-one-return-medicine/:returnId/:ipdPatientMainId",
   upload.none(),
   async (req, res) => {
-    const returnId = req.params.returnId;
+    const { returnId, ipdPatientMainId } = req.params;
     const medicine = req.body.medicine ? JSON.parse(req.body.medicine) : [];
 
-    if (!returnId || returnId.length === 0) {
+    if (
+      !returnId ||
+      returnId.length === 0 ||
+      !ipdPatientMainId ||
+      ipdPatientMainId.length === 0
+    ) {
       return res
         .status(404)
-        .json({ message: "Return Medicine ID Is Required" });
+        .json({ message: "Return Medicine ID and Ipd Patient Id Is Required" });
     }
     try {
       const IPDReturnedMedicinedata =
         await IPDReturnedMedicine.findOneAndUpdate(
           {
             returnedMedicineId: returnId,
+            ipdPatientMainId: ipdPatientMainId,
           },
           {
             medicine: medicine?.map((med) => ({
@@ -157,6 +173,16 @@ Router.put(
               Quantity: Number(med?.Quantity),
               Price: Number(med?.Price),
               subTotal: Number(med?.Price) * Number(med?.Quantity),
+              date: (() => {
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                const hours = String(date.getHours()).padStart(2, "0");
+                const minutes = String(date.getMinutes()).padStart(2, "0");
+                const seconds = String(date.getSeconds()).padStart(2, "0");
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+              })(),
             })),
           },
           {

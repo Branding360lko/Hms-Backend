@@ -212,7 +212,6 @@ Router.put(
       TreatmentGivenInBrief,
     } = req.body;
     try {
-      const parsedTreatmentGivenInBrief = JSON.parse(TreatmentGivenInBrief);
       const updatedNurseDischargeDetailsUpdated =
         await EmergencyNurseDischargeDetailsModel.findOneAndUpdate(
           {
@@ -232,9 +231,9 @@ Router.put(
               ? conditionDuringDischarge
               : EmergencyNurseDischargeDetailsModel.conditionDuringDischarge,
             date: date ? date : EmergencyNurseDischargeDetailsModel.date,
-
-            TreatmentGivenInBrief: parsedTreatmentGivenInBrief
-              ? parsedTreatmentGivenInBrief
+            TreatmentGivenInBrief,
+            TreatmentGivenInBrief: TreatmentGivenInBrief
+              ? TreatmentGivenInBrief
               : EmergencyNurseDischargeDetailsModel.TreatmentGivenInBrief,
           }
         );

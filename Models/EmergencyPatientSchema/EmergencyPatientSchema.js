@@ -68,6 +68,10 @@ const EmergencyPatientSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    emergencyPatientAdmissionCharge: {
+      type: Number,
+      default: 0,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

@@ -31,11 +31,158 @@ const generateUniqueId = () => {
 };
 
 Router.get("/EmergencyPatient-GET-ALL", async (req, res) => {
+  const {
+    emergencyPatientId = "",
+    patientName = "",
+    patientMobileNumber = "",
+    page = 1,
+    limit = 10,
+  } = req.query;
   try {
-    const EmergencyPatientData = await EmergencyPatientModel.find();
-    if (EmergencyPatientData) {
-      return res.status(200).json(EmergencyPatientData);
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // const EmergencyPatientData = await EmergencyPatientModel.find();
+
+    let EmergencyPatientData = [];
+    await EmergencyPatientModel.aggregate([
+      {
+        $lookup: {
+          from: "patients",
+          localField: "patientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctor",
+          localField: "doctorId",
+          foreignField: "doctorId",
+          as: "doctorData",
+        },
+      },
+      {
+        $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $unwind: { path: "$doctorData", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $addFields: {
+          patientName: "$patientData.patientName",
+          patientPhone: "$patientData.patientPhone",
+        },
+      },
+      {
+        $match: { patientId: { $regex: emergencyPatientId, $options: "i" } },
+      },
+      {
+        $match: { patientName: { $regex: patientName, $options: "i" } },
+      },
+      {
+        $match: {
+          patientPhone: { $regex: patientMobileNumber, $options: "i" },
+        },
+      },
+      {
+        $sort: { _id: -1 },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: Number(limit),
+      },
+    ])
+      .then((d) => {
+        EmergencyPatientData = d;
+      })
+      .catch(() => {
+        if (error) {
+          EmergencyPatientData = [];
+        }
+      });
+
+    let totalEmergencyPatient = await EmergencyPatientModel.countDocuments();
+
+    if (emergencyPatientId !== "") {
+      totalEmergencyPatient = await EmergencyPatientModel.countDocuments({
+        patientId: { $regex: emergencyPatientId, $options: "i" },
+      });
+    } else if (patientName !== "") {
+      const totalEmergencyPatientCounts = await EmergencyPatientModel.aggregate(
+        [
+          {
+            $lookup: {
+              from: "patients",
+              localField: "patientId",
+              foreignField: "patientId",
+              as: "patientData",
+            },
+          },
+          {
+            $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+          },
+          {
+            $addFields: {
+              patientName: "$patientData.patientName",
+            },
+          },
+          {
+            $match: { patientName: { $regex: patientName, $options: "i" } },
+          },
+          {
+            $count: "patientName",
+          },
+        ]
+      )
+        .then((d) => {
+          totalEmergencyPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalEmergencyPatient = 0;
+        });
+    } else if (patientMobileNumber !== "") {
+      const totalOPDPatientCounts = await EmergencyPatientModel.aggregate([
+        {
+          $lookup: {
+            from: "patients",
+            localField: "patientId",
+            foreignField: "patientId",
+            as: "patientData",
+          },
+        },
+        {
+          $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+        },
+        {
+          $addFields: {
+            patientPhone: "$patientData.patientPhone",
+          },
+        },
+        {
+          $match: {
+            patientPhone: { $regex: patientMobileNumber, $options: "i" },
+          },
+        },
+        {
+          $count: "patientCount",
+        },
+      ])
+        .then((d) => {
+          totalEmergencyPatient = d[0].patientCount;
+        })
+        .catch((error) => {
+          totalEmergencyPatient = 0;
+        });
     }
+
+    res.status(200).json({
+      EmergencyPatientData,
+      totalEmergencyPatient,
+      totalPages: Math.ceil(Number(totalEmergencyPatient) / Number(limit)),
+      currentPage: Number(page),
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -57,7 +204,15 @@ Router.get("/EmergencyPatient-GET-ONE/:ID", async (req, res) => {
 });
 
 Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
+  const {
+    emergencyPatientId = "",
+    patientName = "",
+    page = 1,
+    limit = 10,
+  } = req.query;
   try {
+    const skip = (Number(page) - 1) * Number(limit);
+
     const remainingBalanceCalc = await EmergencyPatientModel.aggregate([
       {
         $lookup: {
@@ -75,20 +230,43 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
       },
       {
         $lookup: {
+          from: "managebeds",
+          localField:
+            "EmergencyPatientMEDDOCLABData.emergencyPatientCurrentBed",
+          foreignField: "bedId",
+          as: "bedDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$bedDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
           from: "doctors",
           localField: "EmergencyPatientMEDDOCLABData.doctorId",
           foreignField: "_id",
           as: "doctorData",
         },
       },
-      // {
-      //   $lookup: {
-      //     from: "doctors",
-      //     localField: "EmergencyPatientMEDDOCLABData.ReferedDoctorId",
-      //     foreignField: "_id",
-      //     as: "ReferedDoctor",
-      //   },
-      // },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "EmergencyPatientMEDDOCLABData.ReferedDoctorId",
+          foreignField: "_id",
+          as: "ReferedDoctor",
+        },
+      },
+      {
+        $lookup: {
+          from: "doctors",
+          localField: "EmergencyPatientMEDDOCLABData.AdditionalDoctorId",
+          foreignField: "_id",
+          as: "additionalDoctorData",
+        },
+      },
       {
         $lookup: {
           from: "doctorprofessionaldetails",
@@ -97,34 +275,51 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           as: "doctorFeesDatails",
         },
       },
-      // {
-      //   $lookup: {
-      //     from: "doctorprofessionaldetails",
-      //     localField: "ReferedDoctor.doctorId",
-      //     foreignField: "doctorId",
-      //     as: "RefereddoctorFeesDatails",
-      //   },
-      // },
       {
-        $addFields: {
-          doctorFees: {
-            $cond: {
-              if: { $eq: [{ $size: "$doctorFeesDatails" }, 0] },
-              then: 0,
-              else: { $arrayElemAt: ["$doctorFeesDatails.doctorFee", 0] },
-            },
-          },
-          // RefereddoctorFees: {
-          //   $cond: {
-          //     if: { $eq: [{ $size: "$RefereddoctorFeesDatails" }, 0] },
-          //     then: 0,
-          //     else: {
-          //       $arrayElemAt: ["$RefereddoctorFeesDatails.doctorFee", 0],
-          //     },
-          //   },
-          // },
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "ReferedDoctor.doctorId",
+          foreignField: "doctorId",
+          as: "RefereddoctorFeesDatails",
         },
       },
+      {
+        $lookup: {
+          from: "doctorprofessionaldetails",
+          localField: "additionalDoctorData.doctorId",
+          foreignField: "doctorId",
+          as: "additionalDoctorFeesDatails",
+        },
+      },
+      // {
+      //   $addFields: {
+      //     doctorFees: {
+      //       $cond: {
+      //         if: { $eq: [{ $size: "$doctorFeesDatails" }, 0] },
+      //         then: 0,
+      //         else: { $arrayElemAt: ["$doctorFeesDatails.doctorFee", 0] },
+      //       },
+      //     },
+      //     RefereddoctorFees: {
+      //       $cond: {
+      //         if: { $eq: [{ $size: "$RefereddoctorFeesDatails" }, 0] },
+      //         then: 0,
+      //         else: {
+      //           $arrayElemAt: ["$RefereddoctorFeesDatails.doctorFee", 0],
+      //         },
+      //       },
+      //     },
+      //     AdditionalDoctorFees: {
+      //       $cond: {
+      //         if: { $eq: [{ $size: "$additionalDoctorFeesDatails" }, 0] },
+      //         then: 0,
+      //         else: {
+      //           $arrayElemAt: ["$additionalDoctorFeesDatails.doctorFee", 0],
+      //         },
+      //       },
+      //     },
+      //   },
+      // },
       {
         $project: {
           _id: "$mainId",
@@ -134,15 +329,354 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           emergencyPatientId:
             "$EmergencyPatientMEDDOCLABData.emergencyPatientData",
           VisitDateTime: "$EmergencyPatientMEDDOCLABData.VisitDateTime",
+          submittedBy: "$EmergencyPatientMEDDOCLABData.submittedBy",
           doctorData: 1,
-          // ReferedDoctor: 1,
-          doctorFees: "$doctorFees",
+          ReferedDoctor: 1,
+          additionalDoctorData: 1,
+          // doctorFees: "$doctorFees",
           // RefereddoctorFees: "$RefereddoctorFees",
+          // AdditionalDoctorFees: "$AdditionalDoctorFees",
           DailyMedicinePriceTotal: {
             $sum: "$EmergencyPatientMEDDOCLABData.medicine.Price",
           },
           DailyTestPriceTotal: {
             $sum: "$EmergencyPatientMEDDOCLABData.test.Price",
+          },
+          DailyDoctorVisitChargeBasedOnBed: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "SEMI-PRIVATE",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorSemiPrivateFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "EMERGENCY",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorEmergencyFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL HIGH",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorGereralHighFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL JANATA",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorGereralJanataFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SUITE",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorPrivateSuiteFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC-DLX",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorPrivateSingleAcDlxFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC",
+                    ],
+                  },
+                  then: "$doctorFeesDatails.doctorPrivateSingleAcFee",
+                },
+              ],
+              default: 0,
+            },
+          },
+          DailyReferDoctorVisitChargeBasedOnBed: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "SEMI-PRIVATE",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorSemiPrivateFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "EMERGENCY",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorEmergencyFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL HIGH",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorGereralHighFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL JANATA",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorGereralJanataFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SUITE",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorPrivateSuiteFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC-DLX",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorPrivateSingleAcDlxFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC",
+                    ],
+                  },
+                  then: "$RefereddoctorFeesDatails.doctorPrivateSingleAcFee",
+                },
+              ],
+              default: 0,
+            },
+          },
+          DailyAdditionalDoctorVisitChargeBasedOnBed: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "SEMI-PRIVATE",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorSemiPrivateFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "EMERGENCY",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorEmergencyFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL HIGH",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorGereralHighFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "GENERAL JANATA",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorGereralJanataFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SUITE",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorPrivateSuiteFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC-DLX",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorPrivateSingleAcDlxFee",
+                },
+                {
+                  case: {
+                    $eq: [
+                      {
+                        $concat: [
+                          "$bedDetails.bedType",
+                          "",
+                          "$bedDetails.bedSubType",
+                        ],
+                      },
+                      "PRIVATE SINGLE-AC",
+                    ],
+                  },
+                  then: "$additionalDoctorFeesDatails.doctorPrivateSingleAcFee",
+                },
+              ],
+              default: 0,
+            },
           },
         },
       },
@@ -153,8 +687,16 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
           creationDate: { $first: "$createdAt" },
           visitDate: { $first: "$VisitDateTime" },
-          totalDoctorFees: { $sum: "$doctorFees" },
-          // totalRefereddoctorFees: { $sum: "$RefereddoctorFees" },
+          submittedBy: { $first: "$submittedBy" },
+          DailyDoctorVisitChargeBasedOnBed: {
+            $first: "$DailyDoctorVisitChargeBasedOnBed",
+          },
+          DailyReferDoctorVisitChargeBasedOnBed: {
+            $first: "$DailyReferDoctorVisitChargeBasedOnBed",
+          },
+          DailyAdditionalDoctorVisitChargeBasedOnBed: {
+            $first: "$DailyAdditionalDoctorVisitChargeBasedOnBed",
+          },
           totalDailyMedicinePriceTotal: { $sum: "$DailyMedicinePriceTotal" },
           totalDailyTestPriceTotal: { $sum: "$DailyTestPriceTotal" },
         },
@@ -168,13 +710,50 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           totalDailyMedicinePriceTotal: 1,
           totalDailyTestPriceTotal: 1,
           visitDate: 1,
-          totalDoctorFees: 1,
-          // totalRefereddoctorFees: 1,
+          submittedBy: 1,
+          DailyDoctorVisitChargeBasedOnBed: 1,
+          DailyReferDoctorVisitChargeBasedOnBed: 1,
+          DailyAdditionalDoctorVisitChargeBasedOnBed: 1,
+          doctorVisitCharge: {
+            $cond: {
+              if: {
+                $or: {
+                  $eq: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+                  $eq: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
+                  $eq: ["$DailyAdditionalDoctorVisitChargeBasedOnBed", 0],
+                },
+              },
+              then: 0,
+              else: {
+                $cond: {
+                  if: { $ne: ["$DailyReferDoctorVisitChargeBasedOnBed", []] },
+                  then: {
+                    $arrayElemAt: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
+                  },
+                  else: {
+                    $cond: {
+                      if: { $eq: ["$submittedBy", "Additional Doctor"] },
+                      then: {
+                        $arrayElemAt: [
+                          "$DailyAdditionalDoctorVisitChargeBasedOnBed",
+                          0,
+                        ],
+                      },
+                      else: {
+                        $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+                      },
+                    },
+                    // $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0]
+                  },
+                },
+              },
+            },
+          },
         },
       },
       {
         $addFields: {
-          overallDoctorVisitCharge: "$totalDoctorFees",
+          overallDoctorVisitCharge: { $sum: "$doctorVisitCharge" },
         },
       },
       {
@@ -202,13 +781,16 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           emergencyPatientRegId: {
             $first: "$emergencyPatientBalanceData.emergencyPatientRegId",
           },
-          // totalBalance: { $sum: "$balance.totalBalance" },
+
           balance: { $first: "$emergencyPatientBalanceData.balance" },
-          // totalAddedBalance: { $first: "$balance.addedBalance" },
+
           charges: { $first: "$emergencyPatientBalanceData.charges" },
           labTestCharges: {
             $first: "$emergencyPatientBalanceData.labTestCharges",
           },
+          beds: { $first: "$emergencyPatientBalanceData.beds" },
+          bedCharges: { $first: "$emergencyPatientBalanceData.bedCharges" },
+
           overallTotalMedicinePrice: {
             $first: "$totalDailyMedicinePriceTotal",
           },
@@ -230,6 +812,9 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           totalAddedBalance: { $sum: "$balance.addedBalance" },
           charges: { $first: "$charges" },
           labTestCharges: { $first: "$labTestCharges" },
+          beds: { $first: "$beds" },
+          bedCharges: { $first: "$bedCharges" },
+          // currentBed: { $first: "$currentBed" },
           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
@@ -260,6 +845,9 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
           labTestCharges: { $first: "$labTestCharges" },
+          beds: { $first: "$beds" },
+          bedCharges: { $first: "$bedCharges" },
+          // currentBed: { $first: "$currentBed" },
           // totalBalance: { $first: "$totalBalance" },
           totalAddedBalance: { $first: "$totalAddedBalance" },
           totalCharges: {
@@ -282,6 +870,12 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
         },
       },
       {
+        $unwind: {
+          path: "$bedCharges",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $group: {
           _id: "$_id",
           emergencyBedNo: { $first: "$emergencyBedNo" },
@@ -290,6 +884,9 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           balanceID: { $first: "$balanceID" },
           uhid: { $first: "$uhid" },
           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+          beds: { $first: "$beds" },
+          bedCharges: { $first: "$bedCharges" },
+          // currentBed: { $first: "$currentBed" },
           // labTestCharges: { $first: "$labTestCharges" },
           // totalBalance: { $first: "$totalBalance" },
           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
@@ -304,6 +901,12 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
                 "$labTestCharges.items.price",
               ],
             },
+          },
+          totalPreviousDays: {
+            $sum: "$bedCharges.days",
+          },
+          previousBedCharges: {
+            $sum: "$bedCharges.subTotal",
           },
         },
       },
@@ -328,6 +931,9 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           uhid: { $first: "$uhid" },
           emergencyPatientObjectId: { $first: "$_id" },
           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+          beds: { $first: "$beds" },
+          // bedCharges: { $first: "$bedCharges" },
+          // currentBed: { $first: "$currentBed" },
           totalAddedBalance: { $first: "$totalAddedBalance" },
           totalCharges: { $first: "$totalCharges" },
           totalLabTestCharges: { $first: "$totalLabTestCharges" },
@@ -336,13 +942,15 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
           creationDate: { $first: "$creationDate" },
           beddata: { $first: "$BedData" },
+          totalPreviousDays: { $first: "$totalPreviousDays" },
+          previousBedCharges: { $first: "$previousBedCharges" },
         },
       },
       {
         $lookup: {
           from: "emergencypatientdischargereciepts",
-          localField: "_id", // Adjust this field as needed
-          foreignField: "emergencyPatientRegId", // Adjust this field as needed
+          localField: "_id",
+          foreignField: "emergencyPatientRegId",
           as: "dischargeData",
         },
       },
@@ -351,24 +959,83 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
       },
       {
         $addFields: {
-          days: {
+          currentBed: { $last: "$beds" },
+        },
+      },
+      {
+        $addFields: {
+          singleBedData: {
             $cond: {
-              if: { $eq: ["$emergencyPatientDischarged", true] },
-              then: {
-                // days: "$dischargeData.dateAndTimeOfDischarge",
-                $dateDiff: {
-                  startDate: "$creationDate",
-                  endDate: "$dischargeData.dateAndTimeOfDischarge",
-                  unit: "day",
+              if: { $eq: ["$currentBed", null] },
+              then: [],
+              else: "$currentBed",
+            },
+          },
+          // allBeds: {
+          //   $cond: {
+          //     if: { $eq: ["$beds", null] },
+          //     then: [],
+          //     else: "$beds",
+          //   },
+          // },
+        },
+      },
+      {
+        $addFields: {
+          days: {
+            $switch: {
+              branches: [
+                {
+                  case: { $eq: ["$beds", null] },
+                  then: 0,
                 },
-              },
-              else: {
-                $dateDiff: {
-                  startDate: "$creationDate",
-                  endDate: "$$NOW",
-                  unit: "day",
+                {
+                  case: { $eq: [{ $size: "$beds" }, 1] },
+                  then: {
+                    $cond: {
+                      if: { $eq: ["$emergencyPatientDischarged", true] },
+                      then: {
+                        // days: "$dischargeData.dateAndTimeOfDischarge",
+                        $dateDiff: {
+                          startDate: "$creationDate",
+                          endDate: "$dischargeData.dateAndTimeOfDischarge",
+                          unit: "day",
+                        },
+                      },
+                      else: {
+                        $dateDiff: {
+                          startDate: "$creationDate",
+                          endDate: "$$NOW",
+                          unit: "day",
+                        },
+                      },
+                    },
+                  },
                 },
-              },
+                {
+                  case: { $gt: [{ $size: "$beds" }, 1] },
+                  then: {
+                    $cond: {
+                      if: { $eq: ["$emergencyPatientDischarged", true] },
+                      then: {
+                        // days: "$dischargeData.dateAndTimeOfDischarge",
+                        $dateDiff: {
+                          startDate: "$singleBedData.createdAt",
+                          endDate: "$dischargeData.dateAndTimeOfDischarge",
+                          unit: "day",
+                        },
+                      },
+                      else: {
+                        $dateDiff: {
+                          startDate: "$singleBedData.createdAt",
+                          endDate: "$$NOW",
+                          unit: "day",
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
             },
           },
         },
@@ -387,13 +1054,58 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           overallDoctorVisitCharge: 1,
           creationDate: 1,
           beddata: 1,
-          days: { $add: ["$days", 1] },
+          beds: 1,
+          singleBedData: 1,
+          previousBedCharges: 1,
+          totalPreviousDays: 1,
+          days: {
+            $switch: {
+              branches: [
+                {
+                  case: { $eq: ["$beds", null] },
+                  then: { $add: ["$days", 1] },
+                },
+                {
+                  case: { $eq: [{ $size: "$beds" }, 1] },
+                  then: { $add: ["$days", 1] },
+                },
+                {
+                  case: { $gt: [{ $size: "$beds" }, 1] },
+                  then: "$days",
+                },
+              ],
+            },
+          },
+          // bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
+          // nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
+          // EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
+          // bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+          // sanitizationCharges: {
+          //   $multiply: ["$days", "$beddata.sanitizationCharges"],
+          // },
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "uhid",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      {
+        $unwind: { path: "$patientData", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $addFields: {
+          patientName: "$patientData.patientName",
         },
       },
       {
         $project: {
           balanceID: 1,
           uhid: 1,
+          patientName: 1,
           emergencyPatientObjectId: 1,
           emergencyPatientRegId: 1,
           totalAddedBalance: 1,
@@ -404,6 +1116,8 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           overallDoctorVisitCharge: 1,
           creationDate: 1,
           // beddata: 1,
+          previousBedCharges: 1,
+          totalPreviousDays: 1,
           days: 1,
           bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
           nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
@@ -414,6 +1128,7 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
           },
         },
       },
+
       {
         $addFields: {
           autoChargesTotal: {
@@ -437,6 +1152,7 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
               "$overallTotalMedicinePrice",
               "$overallTotalTestPrice",
               "$overallDoctorVisitCharge",
+              "$previousBedCharges",
             ],
           },
           remainingBalance: {
@@ -454,21 +1170,614 @@ Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
                   "$overallTotalMedicinePrice",
                   "$overallTotalTestPrice",
                   "$overallDoctorVisitCharge",
+                  "$previousBedCharges",
                 ],
               },
             ],
           },
         },
       },
+      {
+        $sort: { _id: -1 },
+      },
+      {
+        $match: { uhid: { $regex: emergencyPatientId, $options: "i" } },
+      },
+      {
+        $match: { patientName: { $regex: patientName, $options: "i" } },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: Number(limit),
+      },
     ]);
 
     return res.status(200).json({
+      // data: allBalances,
       balanceCalculation: remainingBalanceCalc,
+      // medicineDoctorTestBalanceCalculation:
+      //   medicineDoctorTestBalanceCalculation,
+      // mainRemainingBalance:
+      //   balanceCalculation.remainingBalance -
+      //   (medicineDoctorTestBalanceCalculation.overallTotalMedicinePrice +
+      //     medicineDoctorTestBalanceCalculation.overallTotalMedicinePrice +
+      //     medicineDoctorTestBalanceCalculation.overallTotalMedicinePrice),
     });
   } catch (error) {
+    console.log(error);
     res.status(500).json("Internal Server Error");
   }
 });
+
+// Router.get("/EmergencyPatient-Balance-GET-ALL", async (req, res) => {
+//   const {
+//     emergencyPatientId = "",
+//     patientName = "",
+//     page = 1,
+//     limit = 10,
+//   } = req.query;
+//   try {
+//     const skip = (Number(page) - 1) * Number(limit);
+
+//     const remainingBalanceCalc = await EmergencyPatientModel.aggregate([
+//       {
+//         $lookup: {
+//           from: "emergencypatientschecks",
+//           localField: "mainId",
+//           foreignField: "mainId",
+//           as: "EmergencyPatientMEDDOCLABData",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$EmergencyPatientMEDDOCLABData",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "managebeds",
+//           localField:
+//             "EmergencyPatientMEDDOCLABData.emergencyPatientCurrentBed",
+//           foreignField: "bedId",
+//           as: "bedDetails",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$bedDetails",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "doctors",
+//           localField: "EmergencyPatientMEDDOCLABData.doctorId",
+//           foreignField: "_id",
+//           as: "doctorData",
+//         },
+//       },
+//       // {
+//       //   $lookup: {
+//       //     from: "doctors",
+//       //     localField: "EmergencyPatientMEDDOCLABData.ReferedDoctorId",
+//       //     foreignField: "_id",
+//       //     as: "ReferedDoctor",
+//       //   },
+//       // },
+//       {
+//         $lookup: {
+//           from: "doctorprofessionaldetails",
+//           localField: "doctorData.doctorId",
+//           foreignField: "doctorId",
+//           as: "doctorFeesDatails",
+//         },
+//       },
+//       // {
+//       //   $lookup: {
+//       //     from: "doctorprofessionaldetails",
+//       //     localField: "ReferedDoctor.doctorId",
+//       //     foreignField: "doctorId",
+//       //     as: "RefereddoctorFeesDatails",
+//       //   },
+//       // },
+//       // {
+//       //   $addFields: {
+//       //     doctorFees: {
+//       //       $cond: {
+//       //         if: { $eq: [{ $size: "$doctorFeesDatails" }, 0] },
+//       //         then: 0,
+//       //         else: { $arrayElemAt: ["$doctorFeesDatails.doctorFee", 0] },
+//       //       },
+//       //     },
+//       //     // RefereddoctorFees: {
+//       //     //   $cond: {
+//       //     //     if: { $eq: [{ $size: "$RefereddoctorFeesDatails" }, 0] },
+//       //     //     then: 0,
+//       //     //     else: {
+//       //     //       $arrayElemAt: ["$RefereddoctorFeesDatails.doctorFee", 0],
+//       //     //     },
+//       //     //   },
+//       //     // },
+//       //   },
+//       // },
+//       {
+//         $project: {
+//           _id: "$mainId",
+//           bedId: 1,
+//           emergencyPatientDischarged: 1,
+//           createdAt: 1,
+//           emergencyPatientId:
+//             "$EmergencyPatientMEDDOCLABData.emergencyPatientData",
+//           VisitDateTime: "$EmergencyPatientMEDDOCLABData.VisitDateTime",
+//           submittedBy: "$EmergencyPatientMEDDOCLABData.submittedBy",
+//           doctorData: 1,
+//           // ReferedDoctor: 1,
+//           // doctorFees: "$doctorFees",
+//           // RefereddoctorFees: "$RefereddoctorFees",
+//           DailyMedicinePriceTotal: {
+//             $sum: "$EmergencyPatientMEDDOCLABData.medicine.Price",
+//           },
+//           DailyTestPriceTotal: {
+//             $sum: "$EmergencyPatientMEDDOCLABData.test.Price",
+//           },
+//           DailyDoctorVisitChargeBasedOnBed: {
+//             $switch: {
+//               branches: [
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "SEMI-PRIVATE",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorSemiPrivateFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "EMERGENCY",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorEmergencyFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "GENERAL HIGH",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorGereralHighFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "GENERAL JANATA",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorGereralJanataFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "PRIVATE SUITE",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorPrivateSuiteFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "PRIVATE SINGLE-AC-DLX",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorPrivateSingleAcDlxFee",
+//                 },
+//                 {
+//                   case: {
+//                     $eq: [
+//                       {
+//                         $concat: [
+//                           "$bedDetails.bedType",
+//                           "",
+//                           "$bedDetails.bedSubType",
+//                         ],
+//                       },
+//                       "PRIVATE SINGLE-AC",
+//                     ],
+//                   },
+//                   then: "$doctorFeesDatails.doctorPrivateSingleAcFee",
+//                 },
+//               ],
+//               default: 0,
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$bedId" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$createdAt" },
+//           visitDate: { $first: "$VisitDateTime" },
+//           submittedBy: { $first: "$submittedBy" },
+//           totalDoctorFees: { $sum: "$doctorFees" },
+//           // totalRefereddoctorFees: { $sum: "$RefereddoctorFees" },
+//           totalDailyMedicinePriceTotal: { $sum: "$DailyMedicinePriceTotal" },
+//           totalDailyTestPriceTotal: { $sum: "$DailyTestPriceTotal" },
+//           DailyDoctorVisitChargeBasedOnBed: {
+//             $first: "$DailyDoctorVisitChargeBasedOnBed",
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           emergencyBedNo: 1,
+//           emergencyPatientDischarged: 1,
+//           creationDate: 1,
+//           totalDailyMedicinePriceTotal: 1,
+//           totalDailyTestPriceTotal: 1,
+//           visitDate: 1,
+//           // totalDoctorFees: 1,
+//           // totalRefereddoctorFees: 1,
+//           DailyDoctorVisitChargeBasedOnBed: 1,
+//           doctorVisitCharge: {
+//             $cond: {
+//               if: {
+//                 $or: {
+//                   $eq: ["$DailyDoctorVisitChargeBasedOnBed", 0],
+//                   // $eq: ["$DailyReferDoctorVisitChargeBasedOnBed", 0],
+//                   // $eq: ["$DailyAdditionalDoctorVisitChargeBasedOnBed", 0],
+//                 },
+//               },
+//               then: 0,
+//               else: { $arrayElemAt: ["$DailyDoctorVisitChargeBasedOnBed", 0] },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           overallDoctorVisitCharge: { $sum: "$doctorVisitCharge" },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "emergencypatientbalances",
+//           localField: "_id",
+//           foreignField: "emergencyPatientRegId",
+//           as: "emergencyPatientBalanceData",
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$emergencyPatientBalanceData",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$emergencyPatientBalanceData.balanceID" },
+//           uhid: { $first: "$emergencyPatientBalanceData.uhid" },
+//           emergencyPatientRegId: {
+//             $first: "$emergencyPatientBalanceData.emergencyPatientRegId",
+//           },
+//           // totalBalance: { $sum: "$balance.totalBalance" },
+//           balance: { $first: "$emergencyPatientBalanceData.balance" },
+//           // totalAddedBalance: { $first: "$balance.addedBalance" },
+//           charges: { $first: "$emergencyPatientBalanceData.charges" },
+//           labTestCharges: {
+//             $first: "$emergencyPatientBalanceData.labTestCharges",
+//           },
+//           overallTotalMedicinePrice: {
+//             $first: "$totalDailyMedicinePriceTotal",
+//           },
+//           overallTotalTestPrice: { $first: "$totalDailyTestPriceTotal" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//         },
+//       },
+//       { $unwind: { path: "$balance", preserveNullAndEmptyArrays: true } },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           // totalBalance: { $sum: "$balance.totalBalance" },
+//           totalAddedBalance: { $sum: "$balance.addedBalance" },
+//           charges: { $first: "$charges" },
+//           labTestCharges: { $first: "$labTestCharges" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$charges",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$charges.items",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           labTestCharges: { $first: "$labTestCharges" },
+//           // totalBalance: { $first: "$totalBalance" },
+//           totalAddedBalance: { $first: "$totalAddedBalance" },
+//           totalCharges: {
+//             $sum: {
+//               $multiply: ["$charges.items.quantity", "$charges.items.price"],
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$labTestCharges",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $unwind: {
+//           path: "$labTestCharges.items",
+//           preserveNullAndEmptyArrays: true,
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           // labTestCharges: { $first: "$labTestCharges" },
+//           // totalBalance: { $first: "$totalBalance" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//           totalAddedBalance: { $first: "$totalAddedBalance" },
+//           totalCharges: { $first: "$totalCharges" },
+//           totalLabTestCharges: {
+//             $sum: {
+//               $multiply: [
+//                 "$labTestCharges.items.quantity",
+//                 "$labTestCharges.items.price",
+//               ],
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "managebeds",
+//           localField: "emergencyBedNo", // Adjust this field as needed
+//           foreignField: "bedId", // Adjust this field as needed
+//           as: "BedData",
+//         },
+//       },
+//       {
+//         $unwind: { path: "$BedData", preserveNullAndEmptyArrays: true },
+//       },
+//       {
+//         $group: {
+//           _id: "$_id",
+//           emergencyBedNo: { $first: "$emergencyBedNo" },
+//           emergencyPatientDischarged: { $first: "$emergencyPatientDischarged" },
+//           creationDate: { $first: "$creationDate" },
+//           balanceID: { $first: "$balanceID" },
+//           uhid: { $first: "$uhid" },
+//           emergencyPatientObjectId: { $first: "$_id" },
+//           emergencyPatientRegId: { $first: "$emergencyPatientRegId" },
+//           totalAddedBalance: { $first: "$totalAddedBalance" },
+//           totalCharges: { $first: "$totalCharges" },
+//           totalLabTestCharges: { $first: "$totalLabTestCharges" },
+//           overallTotalMedicinePrice: { $first: "$overallTotalMedicinePrice" },
+//           overallTotalTestPrice: { $first: "$overallTotalTestPrice" },
+//           overallDoctorVisitCharge: { $first: "$overallDoctorVisitCharge" },
+//           creationDate: { $first: "$creationDate" },
+//           beddata: { $first: "$BedData" },
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "emergencypatientdischargereciepts",
+//           localField: "_id", // Adjust this field as needed
+//           foreignField: "emergencyPatientRegId", // Adjust this field as needed
+//           as: "dischargeData",
+//         },
+//       },
+//       {
+//         $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
+//       },
+//       {
+//         $addFields: {
+//           days: {
+//             $cond: {
+//               if: { $eq: ["$emergencyPatientDischarged", true] },
+//               then: {
+//                 // days: "$dischargeData.dateAndTimeOfDischarge",
+//                 $dateDiff: {
+//                   startDate: "$creationDate",
+//                   endDate: "$dischargeData.dateAndTimeOfDischarge",
+//                   unit: "day",
+//                 },
+//               },
+//               else: {
+//                 $dateDiff: {
+//                   startDate: "$creationDate",
+//                   endDate: "$$NOW",
+//                   unit: "day",
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           balanceID: 1,
+//           uhid: 1,
+//           emergencyPatientObjectId: 1,
+//           emergencyPatientRegId: 1,
+//           totalAddedBalance: 1,
+//           totalCharges: 1,
+//           totalLabTestCharges: 1,
+//           overallTotalMedicinePrice: 1,
+//           overallTotalTestPrice: 1,
+//           overallDoctorVisitCharge: 1,
+//           creationDate: 1,
+//           beddata: 1,
+//           days: { $add: ["$days", 1] },
+//         },
+//       },
+//       {
+//         $project: {
+//           balanceID: 1,
+//           uhid: 1,
+//           emergencyPatientObjectId: 1,
+//           emergencyPatientRegId: 1,
+//           totalAddedBalance: 1,
+//           totalCharges: 1,
+//           totalLabTestCharges: 1,
+//           overallTotalMedicinePrice: 1,
+//           overallTotalTestPrice: 1,
+//           overallDoctorVisitCharge: 1,
+//           creationDate: 1,
+//           // beddata: 1,
+//           days: 1,
+//           bedCharges: { $multiply: ["$days", "$beddata.bedCharges"] },
+//           nursingCharges: { $multiply: ["$days", "$beddata.nursingCharges"] },
+//           EMOCharges: { $multiply: ["$days", "$beddata.EMOCharges"] },
+//           bioWasteCharges: { $multiply: ["$days", "$beddata.bioWasteCharges"] },
+//           sanitizationCharges: {
+//             $multiply: ["$days", "$beddata.sanitizationCharges"],
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           autoChargesTotal: {
+//             $add: [
+//               "$bedCharges",
+//               "$nursingCharges",
+//               "$EMOCharges",
+//               "$bioWasteCharges",
+//               "$sanitizationCharges",
+//             ],
+//           },
+//           finalTotal: {
+//             $add: [
+//               "$totalCharges",
+//               "$totalLabTestCharges",
+//               "$bedCharges",
+//               "$nursingCharges",
+//               "$EMOCharges",
+//               "$bioWasteCharges",
+//               "$sanitizationCharges",
+//               "$overallTotalMedicinePrice",
+//               "$overallTotalTestPrice",
+//               "$overallDoctorVisitCharge",
+//             ],
+//           },
+//           remainingBalance: {
+//             $subtract: [
+//               "$totalAddedBalance",
+//               {
+//                 $add: [
+//                   "$totalCharges",
+//                   "$totalLabTestCharges",
+//                   "$bedCharges",
+//                   "$nursingCharges",
+//                   "$EMOCharges",
+//                   "$bioWasteCharges",
+//                   "$sanitizationCharges",
+//                   "$overallTotalMedicinePrice",
+//                   "$overallTotalTestPrice",
+//                   "$overallDoctorVisitCharge",
+//                 ],
+//               },
+//             ],
+//           },
+//         },
+//       },
+//     ]);
+
+//     return res.status(200).json({
+//       balanceCalculation: remainingBalanceCalc,
+//     });
+//   } catch (error) {
+//     res.status(500).json("Internal Server Error");
+//   }
+// });
 
 Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
   const id = req.params.Id;
@@ -562,6 +1871,80 @@ Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
           console.log(err);
         });
 
+      // const autoChargeCalculation = await EmergencyPatientModel.aggregate([
+      //   {
+      //     $match: { mainId: EmergencyPatientBalance.emergencyPatientRegId },
+      //   },
+      //   {
+      //     $lookup: {
+      //       from: "managebeds",
+      //       localField: "bedId",
+      //       foreignField: "bedId",
+      //       as: "bedData",
+      //     },
+      //   },
+      //   {
+      //     $unwind: { path: "$bedData", preserveNullAndEmptyArrays: true },
+      //   },
+      //   {
+      //     $lookup: {
+      //       from: "emergencypatientdischargereciepts",
+      //       localField: "mainId",
+      //       foreignField: "emergencyPatientRegId",
+      //       as: "dischargeData",
+      //     },
+      //   },
+      //   {
+      //     $unwind: { path: "$dischargeData", preserveNullAndEmptyArrays: true },
+      //   },
+      //   {
+      //     $addFields: {
+      //       days: {
+      //         $cond: {
+      //           if: { $eq: ["$emergencyPatientDischarged", true] },
+      //           then: {
+      //             $dateDiff: {
+      //               startDate: "$createdAt",
+      //               endDate: "$dischargeData.dateAndTimeOfDischarge",
+      //               unit: "day",
+      //             },
+      //           },
+      //           else: {
+      //             $dateDiff: {
+      //               startDate: "$createdAt",
+      //               endDate: "$$NOW",
+      //               unit: "day",
+      //             },
+      //           },
+      //         },
+      //       },
+      //     },
+      //   },
+      //   {
+      //     $project: {
+      //       bedData: 1,
+      //       days: { $add: ["$days", 1] },
+      //     },
+      //   },
+      //   {
+      //     $project: {
+      //       bedData: 1,
+      //       days: 1,
+      //       bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
+      //       nursingTotalCharges: {
+      //         $multiply: ["$days", "$bedData.nursingCharges"],
+      //       },
+      //       EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+      //       bioWasteTotalCharges: {
+      //         $multiply: ["$days", "$bedData.bioWasteCharges"],
+      //       },
+      //       sanitizationTotalCharges: {
+      //         $multiply: ["$days", "$bedData.sanitizationCharges"],
+      //       },
+      //     },
+      //   },
+      // ]);
+
       const autoChargeCalculation = await EmergencyPatientModel.aggregate([
         {
           $match: { mainId: EmergencyPatientBalance.emergencyPatientRegId },
@@ -579,6 +1962,35 @@ Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
         },
         {
           $lookup: {
+            from: "emergencypatientbalances",
+            localField: "bedId",
+            foreignField: "currentBed",
+            as: "emergencyPatientBalancesData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$emergencyPatientBalancesData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            allBeds: "$emergencyPatientBalancesData.beds",
+          },
+        },
+        {
+          $addFields: {
+            singleBedData: { $last: "$allBeds" },
+          },
+        },
+        {
+          $addFields: {
+            bedCharges: "$emergencyPatientBalancesData.bedCharges",
+          },
+        },
+        {
+          $lookup: {
             from: "emergencypatientdischargereciepts",
             localField: "mainId",
             foreignField: "emergencyPatientRegId",
@@ -591,22 +2003,55 @@ Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
         {
           $addFields: {
             days: {
-              $cond: {
-                if: { $eq: ["$emergencyPatientDischarged", true] },
-                then: {
-                  $dateDiff: {
-                    startDate: "$createdAt",
-                    endDate: "$dischargeData.dateAndTimeOfDischarge",
-                    unit: "day",
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $cond: {
+                        if: { $eq: ["$emergencyPatientDischarged", true] },
+                        then: {
+                          // days: "$dischargeData.dateAndTimeOfDischarge",
+                          $dateDiff: {
+                            startDate: "$createdAt",
+                            endDate: "$dischargeData.dateAndTimeOfDischarge",
+                            unit: "day",
+                          },
+                        },
+                        else: {
+                          $dateDiff: {
+                            startDate: "$createdAt",
+                            endDate: "$$NOW",
+                            unit: "day",
+                          },
+                        },
+                      },
+                    },
                   },
-                },
-                else: {
-                  $dateDiff: {
-                    startDate: "$createdAt",
-                    endDate: "$$NOW",
-                    unit: "day",
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $cond: {
+                        if: { $eq: ["$emergencyPatientDischarged", true] },
+                        then: {
+                          // days: "$dischargeData.dateAndTimeOfDischarge",
+                          $dateDiff: {
+                            startDate: "$singleBedData.createdAt",
+                            endDate: "$dischargeData.dateAndTimeOfDischarge",
+                            unit: "day",
+                          },
+                        },
+                        else: {
+                          $dateDiff: {
+                            startDate: "$singleBedData.createdAt",
+                            endDate: "$$NOW",
+                            unit: "day",
+                          },
+                        },
+                      },
+                    },
                   },
-                },
+                ],
               },
             },
           },
@@ -614,28 +2059,176 @@ Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
         {
           $project: {
             bedData: 1,
-            days: { $add: ["$days", 1] },
+            // beddata: 1,
+            bedCharges: 1,
+            allBeds: 1,
+            singleBedData: 1,
+            emergencyPatientDischarged: 1,
+            createdAt: 1,
+            dischargeData: 1,
+            days: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: { $add: ["$days", 1] },
+                  },
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: "$days",
+                  },
+                ],
+              },
+            },
+            // bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
+            // nursingTotalCharges: {
+            //   $multiply: ["$days", "$bedData.nursingCharges"],
+            // },
+            // EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+            // bioWasteTotalCharges: {
+            //   $multiply: ["$days", "$bedData.bioWasteCharges"],
+            // },
+            // sanitizationTotalCharges: {
+            //   $multiply: ["$days", "$bedData.sanitizationCharges"],
+            // },
           },
         },
         {
           $project: {
             bedData: 1,
+            // beddata: 1,
+            bedCharges: 1,
+            singleBedData: 1,
             days: 1,
-            bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
-            nursingTotalCharges: {
-              $multiply: ["$days", "$bedData.nursingCharges"],
+            totalDays: {
+              $add: [
+                {
+                  $cond: {
+                    if: { $eq: ["$emergencyPatientDischarged", true] },
+                    then: {
+                      // days: "$dischargeData.dateAndTimeOfDischarge",
+                      $dateDiff: {
+                        startDate: "$createdAt",
+                        endDate: "$dischargeData.dateAndTimeOfDischarge",
+                        unit: "day",
+                      },
+                    },
+                    else: {
+                      $dateDiff: {
+                        startDate: "$createdAt",
+                        endDate: "$$NOW",
+                        unit: "day",
+                      },
+                    },
+                  },
+                },
+                1,
+              ],
             },
-            EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+            bedTotalCharges: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $multiply: ["$days", "$bedData.bedCharges"],
+                    },
+                  },
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $sum: "$bedCharges.totalBedCharges",
+                    },
+                  },
+                ],
+              },
+            },
+            nursingTotalCharges: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $multiply: ["$days", "$bedData.nursingCharges"],
+                    },
+                  },
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $sum: "$bedCharges.totalNursingCharges",
+                    },
+                  },
+                ],
+              },
+            },
+            EMOTotalCharges: {
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $multiply: ["$days", "$bedData.EMOCharges"],
+                    },
+                  },
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $sum: "$bedCharges.totalEMOCharges",
+                    },
+                  },
+                ],
+              },
+            },
             bioWasteTotalCharges: {
-              $multiply: ["$days", "$bedData.bioWasteCharges"],
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $multiply: ["$days", "$bedData.bioWasteCharges"],
+                    },
+                  },
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $sum: "$bedCharges.totalBioWasteCharges",
+                    },
+                  },
+                ],
+              },
             },
             sanitizationTotalCharges: {
-              $multiply: ["$days", "$bedData.sanitizationCharges"],
+              $switch: {
+                branches: [
+                  {
+                    case: { $eq: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $multiply: ["$days", "$bedData.sanitizationCharges"],
+                    },
+                  },
+                  {
+                    case: { $gt: [{ $size: "$allBeds" }, 1] },
+                    then: {
+                      $sum: "$bedCharges.totalSanitizationCharges",
+                    },
+                  },
+                ],
+              },
             },
+            // bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
+            // nursingTotalCharges: {
+            //   $multiply: ["$days", "$bedData.nursingCharges"],
+            // },
+            // EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
+            // bioWasteTotalCharges: {
+            //   $multiply: ["$days", "$bedData.bioWasteCharges"],
+            // },
+            // sanitizationTotalCharges: {
+            //   $multiply: ["$days", "$bedData.sanitizationCharges"],
+            // },
           },
         },
       ]);
-
       return res.status(200).json({
         data: EmergencyPatientBalance,
         totalMedicalCharges: totalMedicalCharges,
@@ -645,6 +2238,7 @@ Router.get("/EmergencyPatient-Balance-GET/:Id", async (req, res) => {
       // }
     }
   } catch (error) {
+    console.log(error);
     res.status(500).json("Internal Server Error");
   }
 });
@@ -679,6 +2273,86 @@ Router.post("/EmergencyPatient-POST", async (req, res) => {
     });
 
     if (newEmergencyPatientData) {
+      const test = await EmergencyPatientModel.aggregate([
+        {
+          $match: {
+            mainId: newEmergencyPatientData.mainId,
+          },
+        },
+        {
+          $lookup: {
+            from: "managebeds",
+            localField: "bedId",
+            foreignField: "bedId",
+            as: "bedDetails",
+          },
+        },
+
+        {
+          $unwind: "$bedDetails",
+        },
+        {
+          $lookup: {
+            from: "admissioncharges",
+            localField: "bedDetails.bedType",
+            foreignField: "admissionType",
+            as: "admissionchargeData",
+          },
+        },
+        {
+          $unwind: "$admissionchargeData",
+        },
+        {
+          $set: {
+            emergencyPatientAdmissionCharge: {
+              $switch: {
+                branches: [
+                  {
+                    case: {
+                      $eq: ["$bedDetails.bedType", "GENERAL"],
+                    },
+                    then: "$admissionchargeData.admissionFees",
+                  },
+                  {
+                    case: {
+                      $eq: ["$bedDetails.bedType", "SEMI-PRIVATE"],
+                    },
+                    then: "$admissionchargeData.admissionFees",
+                  },
+                  {
+                    case: {
+                      $eq: ["$bedDetails.bedType", "PRIVATE"],
+                    },
+                    then: "$admissionchargeData.admissionFees",
+                  },
+                  {
+                    case: {
+                      $eq: ["$bedDetails.bedType", "EMERGENCY"],
+                    },
+                    then: "$admissionchargeData.admissionFees",
+                  },
+                ],
+                default: 0,
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            bedDetails: 0,
+            admissionchargeData: 0,
+          },
+        },
+        {
+          $merge: {
+            into: "emergencypatients",
+            on: "_id",
+            whenMatched: "merge",
+          },
+        },
+      ]);
+      console.log(test);
+      
       const newEmergencyPatientBalanceData = new EmergencyPatientBalanceModel({
         balanceID: "EMBal" + generateUniqueId(),
         uhid: newEmergencyPatientData.patientId,
@@ -690,6 +2364,10 @@ Router.post("/EmergencyPatient-POST", async (req, res) => {
           addedBalance: newEmergencyPatientData.emergencyDepositAmount,
           paymentMethod: emergencyPaymentMode,
           balanceNote: balanceNote,
+        },
+        currentBed: newEmergencyPatientData.bedId,
+        beds: {
+          bedId: newEmergencyPatientData.bedId,
         },
       });
 
@@ -724,6 +2402,7 @@ Router.post("/EmergencyPatient-POST", async (req, res) => {
         res.status(200).json({
           message: "Emergency Patient Added Successfully",
           data: data,
+          test:test
         })
       );
     }
@@ -755,7 +2434,7 @@ Router.put("/EmergencyPatient-PUT/:ID", async (req, res) => {
           patientId: patientId ? patientId : EmergencyPatientModel.patientId,
           doctorId: doctorId ? doctorId : EmergencyPatientModel.doctorId,
           nurseId: nurseId ? nurseId : EmergencyPatientModel.nurseId,
-          bedId: bedId ? bedId : EmergencyPatientModel.bedId,
+          // bedId: bedId ? bedId : EmergencyPatientModel.bedId,
           emergencyFloorNo: emergencyFloorNo
             ? emergencyFloorNo
             : EmergencyPatientModel.emergencyFloorNo,
@@ -776,6 +2455,485 @@ Router.put("/EmergencyPatient-PUT/:ID", async (req, res) => {
   }
 });
 
+// Router.put(
+//   "/EmergencyPatient-PUT-ChangeBed/:emergencyPatientRegId",
+//   async (req, res) => {
+//     const id = req.params.emergencyPatientRegId;
+
+//     const { emergencyBedNo } = req.body;
+//     try {
+//       const emergencyPatient = await EmergencyPatientModel.findOne({
+//         mainId: id,
+//       });
+
+//       if (emergencyPatient) {
+//         if (emergencyPatient.bedId === emergencyBedNo) {
+//           return res.status(400).json({ error: "Bed Id Already Used" });
+//         }
+//         if (emergencyPatient.bedId !== emergencyBedNo) {
+//           const balanceCalculation = await ManageBedsModel.aggregate([
+//             {
+//               $match: { bedId: emergencyPatient.bedId },
+//             },
+//             {
+//               $lookup: {
+//                 from: "emergencypatientbalances",
+//                 localField: "bedId",
+//                 foreignField: "currentBed",
+//                 as: "emergencyPatientBalancesData",
+//               },
+//             },
+//             {
+//               $unwind: {
+//                 path: "$emergencyPatientBalancesData",
+//                 preserveNullAndEmptyArrays: true,
+//               },
+//             },
+//             {
+//               $project: {
+//                 bedId: 1,
+//                 bedCharges: 1,
+//                 nursingCharges: 1,
+//                 EMOCharges: 1,
+//                 bioWasteCharges: 1,
+//                 sanitizationCharges: 1,
+//                 beds: "$emergencyPatientBalancesData.beds",
+//               },
+//             },
+//             {
+//               $addFields: {
+//                 bedData: { $last: "$beds" },
+//               },
+//             },
+//             {
+//               $addFields: {
+//                 days: {
+//                   $dateDiff: {
+//                     startDate: "$bedData.createdAt",
+//                     endDate: "$$NOW",
+//                     unit: "day",
+//                   },
+//                 },
+//               },
+//             },
+//             {
+//               $project: {
+//                 bedId: 1,
+//                 days: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: { $add: ["$days", 1] },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: "$days",
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalBedCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$bedCharges", { $add: ["$days", 1] }],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$bedCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalNursingCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: [
+//                             "$nursingCharges",
+//                             { $add: ["$days", 1] },
+//                           ],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$nursingCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalEMOCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$EMOCharges", { $add: ["$days", 1] }],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$EMOCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalBioWasteCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: [
+//                             "$bioWasteCharges",
+//                             { $add: ["$days", 1] },
+//                           ],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$bioWasteCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//                 totalSanitizationCharges: {
+//                   $switch: {
+//                     branches: [
+//                       {
+//                         case: { $eq: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: [
+//                             "$sanitizationCharges",
+//                             { $add: ["$days", 1] },
+//                           ],
+//                         },
+//                       },
+//                       {
+//                         case: { $gt: [{ $size: "$beds" }, 1] },
+//                         then: {
+//                           $multiply: ["$sanitizationCharges", "$days"],
+//                         },
+//                       },
+//                     ],
+//                   },
+//                 },
+//               },
+//             },
+//             {
+//               $addFields: {
+//                 subTotal: {
+//                   $add: [
+//                     "$totalBedCharges",
+//                     "$totalNursingCharges",
+//                     "$totalEMOCharges",
+//                     "$totalBioWasteCharges",
+//                     "$totalSanitizationCharges",
+//                   ],
+//                 },
+//               },
+//             },
+//           ]);
+//           if (balanceCalculation) {
+//             const bedChargesUpdate =
+//               await EmergencyPatientBalanceModel.findOneAndUpdate(
+//                 {
+//                   emergencyPatientRegId: emergencyPatient.mainId,
+//                 },
+//                 {
+//                   $push: {
+//                     bedCharges: balanceCalculation[0],
+//                     beds: {
+//                       bedId: emergencyBedNo,
+//                     },
+//                   },
+//                   currentBed: emergencyBedNo,
+//                 }
+//               );
+
+//             if (bedChargesUpdate) {
+//               const emergencyPatientData =
+//                 await EmergencyPatientModel.findOneAndUpdate(
+//                   {
+//                     mainId: id,
+//                   },
+//                   {
+//                     bedId: emergencyBedNo,
+//                   }
+//                 );
+
+//               if (emergencyPatientData) {
+//                 const bedAvailabilityUpdateForOldBed =
+//                   await ManageBedsModel.findOneAndUpdate(
+//                     {
+//                       bedId: emergencyPatient.bedId,
+//                     },
+//                     { bedAvailableOrNot: true }
+//                   );
+//                 if (bedAvailabilityUpdateForOldBed) {
+//                   const bedAvailabilityUpdateForNewBed =
+//                     await ManageBedsModel.findOneAndUpdate(
+//                       {
+//                         bedId: emergencyBedNo,
+//                       },
+//                       { bedAvailableOrNot: false }
+//                     );
+//                   if (bedAvailabilityUpdateForNewBed) {
+//                     return res
+//                       .status(200)
+//                       .json({ message: "Bed Changed Successfully" });
+//                   }
+//                 }
+//               }
+//             }
+//           }
+//           // console.log(balanceCalculation);
+//         }
+//       }
+//     } catch (error) {
+//       // console.log(error);
+//       res.status(500).json("Internal Server Error");
+//     }
+//   }
+// );
+
+Router.put(
+  "/EmergencyPatient-PUT-ChangeBed/:emergencyPatientRegId",
+  async (req, res) => {
+    const id = req.params.emergencyPatientRegId;
+    const { emergencyBedNo } = req.body;
+
+    try {
+      const emergencyPatient = await EmergencyPatientModel.findOne({
+        mainId: id,
+      });
+
+      if (!emergencyPatient) {
+        return res.status(404).json({ error: "Emergency patient not found" });
+      }
+
+      if (emergencyPatient.bedId === emergencyBedNo) {
+        return res.status(400).json({ error: "Bed Id Already Used" });
+      }
+
+      const balanceCalculation = await ManageBedsModel.aggregate([
+        { $match: { bedId: emergencyPatient.bedId } },
+        {
+          $lookup: {
+            from: "emergencypatientbalances",
+            localField: "bedId",
+            foreignField: "currentBed",
+            as: "emergencyPatientBalancesData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$emergencyPatientBalancesData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            bedId: 1,
+            bedCharges: 1,
+            nursingCharges: 1,
+            EMOCharges: 1,
+            bioWasteCharges: 1,
+            sanitizationCharges: 1,
+            beds: { $ifNull: ["$emergencyPatientBalancesData.beds", []] },
+            createdAt: {
+              $ifNull: ["$emergencyPatientBalancesData.createdAt", "$$NOW"],
+            },
+          },
+        },
+        {
+          $addFields: {
+            bedData: { $last: "$beds" },
+          },
+        },
+        {
+          $addFields: {
+            days: {
+              $dateDiff: {
+                startDate: "$bedData.createdAt",
+                endDate: "$$NOW",
+                unit: "day",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            bedId: 1,
+            days: {
+              $cond: {
+                if: { $gt: [{ $size: "$beds" }, 1] },
+                then: "$days",
+                else: { $add: ["$days", 1] },
+              },
+            },
+            totalBedCharges: {
+              $multiply: [
+                "$bedCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalNursingCharges: {
+              $multiply: [
+                "$nursingCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalEMOCharges: {
+              $multiply: [
+                "$EMOCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalBioWasteCharges: {
+              $multiply: [
+                "$bioWasteCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+            totalSanitizationCharges: {
+              $multiply: [
+                "$sanitizationCharges",
+                {
+                  $cond: {
+                    if: { $gt: [{ $size: "$beds" }, 1] },
+                    then: "$days",
+                    else: { $add: ["$days", 1] },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            subTotal: {
+              $add: [
+                "$totalBedCharges",
+                "$totalNursingCharges",
+                "$totalEMOCharges",
+                "$totalBioWasteCharges",
+                "$totalSanitizationCharges",
+              ],
+            },
+          },
+        },
+      ]);
+
+      console.log("Balance Calculation:", balanceCalculation);
+
+      if (!balanceCalculation || balanceCalculation.length === 0) {
+        return res.status(404).json({ error: "Balance calculation not found" });
+      }
+
+      const bedChargesUpdate =
+        await EmergencyPatientBalanceModel.findOneAndUpdate(
+          { emergencyPatientRegId: emergencyPatient.mainId },
+          {
+            $push: {
+              bedCharges: balanceCalculation[0],
+              beds: { bedId: emergencyBedNo },
+            },
+            currentBed: emergencyBedNo,
+          },
+          { new: true }
+        );
+
+      console.log("Bed Charges Update Result:", bedChargesUpdate);
+
+      if (!bedChargesUpdate) {
+        return res.status(500).json({
+          error: "Failed to update bed charges",
+          details: "No update performed on EmergencyPatientBalanceModel.",
+        });
+      }
+
+      const emergencyPatientData = await EmergencyPatientModel.findOneAndUpdate(
+        { mainId: id },
+        { bedId: emergencyBedNo },
+        { new: true }
+      );
+
+      if (!emergencyPatientData) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update emergency patient data" });
+      }
+
+      const bedAvailabilityUpdateForOldBed =
+        await ManageBedsModel.findOneAndUpdate(
+          { bedId: emergencyPatient.bedId },
+          { bedAvailableOrNot: true }
+        );
+
+      if (!bedAvailabilityUpdateForOldBed) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update old bed availability" });
+      }
+
+      const bedAvailabilityUpdateForNewBed =
+        await ManageBedsModel.findOneAndUpdate(
+          { bedId: emergencyBedNo },
+          { bedAvailableOrNot: false }
+        );
+
+      if (!bedAvailabilityUpdateForNewBed) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update new bed availability" });
+      }
+
+      return res.status(200).json({ message: "Bed Changed Successfully" });
+    } catch (error) {
+      console.error("Error in bed change:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
 Router.delete("/EmergencyPatient-DELETE/:ID", async (req, res) => {
   const id = req.params.ID;
 

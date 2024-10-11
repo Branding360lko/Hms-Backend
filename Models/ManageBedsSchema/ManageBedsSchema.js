@@ -29,19 +29,23 @@ const ManageBedsSchema = new Schema(
     },
     nursingCharges: {
       type: Number,
-      required: true,
+      // required: true,
+      default:0,
     },
     EMOCharges: {
       type: Number,
-      required: true,
+      // required: true,
+      default:0,
     },
     bioWasteCharges: {
       type: Number,
-      required: true,
+      // required: true,
+      default:0,
     },
     sanitizationCharges: {
       type: Number,
-      required: true,
+      // required: true,
+      default:0,
     },
     bedAvailableOrNot: {
       type: Boolean,
