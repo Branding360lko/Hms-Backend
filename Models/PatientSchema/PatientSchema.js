@@ -32,12 +32,19 @@ const PatientSchema = new Schema(
       type: Number,
       // required: true,
     },
+    patientAgeMonth: {
+      type: Number,
+      // required: true,
+    },
     patientPhone: {
       type: String,
       required: true,
     },
     patientPhone2: {
       type: String,
+    },
+    patientAdharNumber: {
+      type: Number,
     },
     patientHeight: {
       type: String,

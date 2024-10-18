@@ -671,6 +671,7 @@ Router.get("/download-opd-list/:date", async (req, res) => {
           opdPatientDicountPercentageByDoctor: 1,
           opdPatientFinalChargedAmount: 1,
           opdPatientRefundedAmount: 1,
+          opdPatientPaymentMode: 1,
         },
       },
     ]);
@@ -687,6 +688,7 @@ Router.get("/download-opd-list/:date", async (req, res) => {
       DicountPercentage: patient.opdPatientDicountPercentageByDoctor || 0,
       RefundedAmount: patient.opdPatientRefundedAmount || 0,
       FinalChargedAmount: patient.opdPatientFinalChargedAmount || "",
+      PaymentMode: patient.opdPatientPaymentMode || "",
     }));
 
     const csv = json2csv(formattedData, { header: true });

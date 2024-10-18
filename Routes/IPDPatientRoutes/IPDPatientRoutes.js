@@ -701,15 +701,6 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
             },
           },
 
-          // DailyDoctorVisitChargeBasedOnBed: {
-          //   $first: "$DailyDoctorVisitChargeBasedOnBed",
-          // },
-          // DailyReferDoctorVisitChargeBasedOnBed: {
-          //   $first: "$DailyReferDoctorVisitChargeBasedOnBed",
-          // },
-          // DailyAdditionalDoctorVisitChargeBasedOnBed: {
-          //   $first: "$DailyAdditionalDoctorVisitChargeBasedOnBed",
-          // },
           totalDailyMedicinePriceTotal: { $sum: "$DailyMedicinePriceTotal" },
           totalDailyTestPriceTotal: { $sum: "$DailyTestPriceTotal" },
         },
@@ -739,27 +730,6 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
             $ifNull: ["$DailyAdditionalDoctorVisitChargeBasedOnBed", 0],
           },
 
-          // highestPriorityCharge: {
-          //   $arrayElemAt: [
-          //     {
-          //       $filter: {
-          //         input: {
-          //           $sortArray: {
-          //             input: "$allCharges",
-          //             sortBy: { priority: 1, date: -1 },
-          //           },
-          //         },
-          //         as: "charge",
-          //         cond: { $gt: ["$$charge.charge", 0] },
-          //       },
-          //     },
-          //     0,
-          //   ],
-          // },
-
-          // doctorVisitCharge: {
-          //   $ifNull: ["$highestPriorityCharge.charge", 0],
-          // },
           doctorVisitCharge: {
             $sum: {
               $map: {
@@ -958,10 +928,18 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
             $sum: "$bedCharges.days",
           },
           previousBedCharges: {
-            $sum: "$bedCharges.subTotal",
+            $sum: {
+              $cond: {
+                if: { $eq: ["$ipdPatientIsInsured", true] },
+                then: { $sum: "$bedCharges.totalBedCharges" }, // Summing totalBedCharges
+                else: { $sum: "$bedCharges.subTotal" }, // Summing subTotal
+              },
+            },
           },
+          bedCharges: { $first: "$bedCharges" },
         },
       },
+
       {
         $lookup: {
           from: "managebeds",
@@ -1000,6 +978,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           beddata: { $first: "$BedData" },
           totalPreviousDays: { $first: "$totalPreviousDays" },
           previousBedCharges: { $first: "$previousBedCharges" },
+          bedCharges: { $first: "$bedCharges" },
         },
       },
       {
@@ -1112,6 +1091,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           singleBedData: 1,
           previousBedCharges: 1,
           totalPreviousDays: 1,
+          bedCharges: 1,
           days: {
             $switch: {
               branches: [
@@ -1174,7 +1154,7 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           overallTotalTestPrice: 1,
           overallDoctorVisitCharge: 1,
           creationDate: 1,
-          // beddata: 1,
+          beddata: 1,
           previousBedCharges: 1,
           totalPreviousDays: 1,
           days: 1,
@@ -1215,7 +1195,13 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
           },
         },
       },
-
+      {
+        $addFields: {
+          totalNumberOfDays: {
+            $add: ["$totalPreviousDays", "$days"],
+          },
+        },
+      },
       {
         $addFields: {
           autoChargesTotal: {
@@ -1306,6 +1292,13 @@ Router.get("/IPDPatient-Balance-GET-ALL", async (req, res) => {
               { $toDouble: "$finalTotal" },
               { $toDouble: "$discountAmount" },
             ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          totalBedCharges: {
+            $add: ["$autoChargesTotal", "$previousBedCharges"],
           },
         },
       },
@@ -1854,6 +1847,20 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           },
         },
         {
+          $lookup: {
+            from: "ipdreturnedmedicines",
+            localField: "mainId",
+            foreignField: "ipdPatientMainId",
+            as: "ipdPatientReturnMedicine",
+          },
+        },
+        {
+          $unwind: {
+            path: "$ipdPatientReturnMedicine",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
           $addFields: {
             allBeds: "$IPDPatientBalancesData.beds",
           },
@@ -1939,6 +1946,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
           $project: {
             bedData: 1,
             // beddata: 1,
+            ipdPatientReturnMedicine: 1,
             bedCharges: 1,
             allBeds: 1,
             singleBedData: 1,
@@ -1960,17 +1968,6 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
                 ],
               },
             },
-            // bedTotalCharges: { $multiply: ["$days", "$bedData.bedCharges"] },
-            // nursingTotalCharges: {
-            //   $multiply: ["$days", "$bedData.nursingCharges"],
-            // },
-            // EMOTotalCharges: { $multiply: ["$days", "$bedData.EMOCharges"] },
-            // bioWasteTotalCharges: {
-            //   $multiply: ["$days", "$bedData.bioWasteCharges"],
-            // },
-            // sanitizationTotalCharges: {
-            //   $multiply: ["$days", "$bedData.sanitizationCharges"],
-            // },
           },
         },
         {
@@ -1978,6 +1975,7 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
             bedData: 1,
             bedCharges: 1,
             singleBedData: 1,
+            ipdPatientReturnMedicine: 1,
             days: 1,
             ipdPatientIsInsured: { $ifNull: ["$ipdPatientIsInsured", false] },
             totalDays: {
@@ -2006,94 +2004,220 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
               ],
             },
             bedTotalCharges: {
-              $switch: {
-                branches: [
-                  {
-                    case: { $eq: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $multiply: ["$days", "$bedData.bedCharges"],
+              // $switch: {
+              //   branches: [
+              //     {
+              //       case: { $eq: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $multiply: ["$days", "$bedData.bedCharges"],
+              //       },
+              //     },
+              //     {
+              //       case: { $gt: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $sum: "$bedCharges.totalBedCharges",
+              //       },
+              //     },
+              //   ],
+              // },
+              // $add: [
+              //   { $sum: "$bedCharges.totalBedCharges" },
+              //   { $multiply: ["$days", "$bedData.bedCharges"] },
+              // ],
+              $add: [
+                {
+                  $cond: {
+                    if: {
+                      $or: [
+                        { $eq: ["$bedCharges.totalBedCharges", null] },
+                        { $eq: ["$bedCharges.totalBedCharges", 0] },
+                        { $eq: ["$bedCharges.totalBedCharges", []] },
+                      ],
                     },
+                    then: 0,
+                    else: { $sum: "$bedCharges.totalBedCharges" },
                   },
-                  {
-                    case: { $gt: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $sum: "$bedCharges.totalBedCharges",
+                },
+                {
+                  $cond: {
+                    if: {
+                      $or: [{ $eq: ["$days", null] }, { $eq: ["$days", 0] }],
                     },
+                    then: 0,
+                    else: { $multiply: ["$days", "$bedData.bedCharges"] },
                   },
-                ],
-              },
+                },
+              ],
             },
             nursingTotalCharges: {
-              $switch: {
-                branches: [
-                  {
-                    case: { $eq: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $multiply: ["$days", "$bedData.nursingCharges"],
+              // $switch: {
+              //   branches: [
+              //     {
+              //       case: { $eq: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $multiply: ["$days", "$bedData.nursingCharges"],
+              //       },
+              //     },
+              //     {
+              //       case: { $gt: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $sum: "$bedCharges.totalNursingCharges",
+              //       },
+              //     },
+              //   ],
+              // },
+              $add: [
+                {
+                  $cond: {
+                    if: {
+                      $or: [
+                        { $eq: ["$bedCharges.totalNursingCharges", null] },
+                        { $eq: ["$bedCharges.totalNursingCharges", 0] },
+                        { $eq: ["$bedCharges.totalNursingCharges", []] },
+                      ],
                     },
+                    then: 0,
+                    else: { $sum: "$bedCharges.totalNursingCharges" },
                   },
-                  {
-                    case: { $gt: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $sum: "$bedCharges.totalNursingCharges",
+                },
+                {
+                  $cond: {
+                    if: {
+                      $or: [{ $eq: ["$days", null] }, { $eq: ["$days", 0] }],
                     },
+                    then: 0,
+                    else: { $multiply: ["$days", "$bedData.nursingCharges"] },
                   },
-                ],
-              },
+                },
+              ],
             },
             EMOTotalCharges: {
-              $switch: {
-                branches: [
-                  {
-                    case: { $eq: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $multiply: ["$days", "$bedData.EMOCharges"],
+              // $switch: {
+              //   branches: [
+              //     {
+              //       case: { $eq: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $multiply: ["$days", "$bedData.EMOCharges"],
+              //       },
+              //     },
+              //     {
+              //       case: { $gt: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $sum: "$bedCharges.totalEMOCharges",
+              //       },
+              //     },
+              //   ],
+              // },
+              $add: [
+                {
+                  $cond: {
+                    if: {
+                      $or: [
+                        { $eq: ["$bedCharges.totalEMOCharges", null] },
+                        { $eq: ["$bedCharges.totalEMOCharges", 0] },
+                        { $eq: ["$bedCharges.totalEMOCharges", []] },
+                      ],
                     },
+                    then: 0,
+                    else: { $sum: "$bedCharges.totalEMOCharges" },
                   },
-                  {
-                    case: { $gt: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $sum: "$bedCharges.totalEMOCharges",
+                },
+                {
+                  $cond: {
+                    if: {
+                      $or: [{ $eq: ["$days", null] }, { $eq: ["$days", 0] }],
                     },
+                    then: 0,
+                    else: { $multiply: ["$days", "$bedData.EMOCharges"] },
                   },
-                ],
-              },
+                },
+              ],
             },
             bioWasteTotalCharges: {
-              $switch: {
-                branches: [
-                  {
-                    case: { $eq: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $multiply: ["$days", "$bedData.bioWasteCharges"],
+              // $switch: {
+              //   branches: [
+              //     {
+              //       case: { $eq: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $multiply: ["$days", "$bedData.bioWasteCharges"],
+              //       },
+              //     },
+              //     {
+              //       case: { $gt: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $sum: "$bedCharges.totalBioWasteCharges",
+              //       },
+              //     },
+              //   ],
+              // },
+              $add: [
+                {
+                  $cond: {
+                    if: {
+                      $or: [
+                        { $eq: ["$bedCharges.totalBioWasteCharges", null] },
+                        { $eq: ["$bedCharges.totalBioWasteCharges", 0] },
+                        { $eq: ["$bedCharges.totalBioWasteCharges", []] },
+                      ],
                     },
+                    then: 0,
+                    else: { $sum: "$bedCharges.totalBioWasteCharges" },
                   },
-                  {
-                    case: { $gt: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $sum: "$bedCharges.totalBioWasteCharges",
+                },
+                {
+                  $cond: {
+                    if: {
+                      $or: [{ $eq: ["$days", null] }, { $eq: ["$days", 0] }],
                     },
+                    then: 0,
+                    else: { $multiply: ["$days", "$bedData.bioWasteCharges"] },
                   },
-                ],
-              },
+                },
+              ],
             },
             sanitizationTotalCharges: {
-              $switch: {
-                branches: [
-                  {
-                    case: { $eq: [{ $size: "$allBeds" }, 1] },
-                    then: {
+              // $switch: {
+              //   branches: [
+              //     {
+              //       case: { $eq: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $multiply: ["$days", "$bedData.sanitizationCharges"],
+              //       },
+              //     },
+              //     {
+              //       case: { $gt: [{ $size: "$allBeds" }, 1] },
+              //       then: {
+              //         $sum: "$bedCharges.totalSanitizationCharges",
+              //       },
+              //     },
+              //   ],
+              // },
+              $add: [
+                {
+                  $cond: {
+                    if: {
+                      $or: [
+                        { $eq: ["$bedCharges.totalSanitizationCharges", null] },
+                        { $eq: ["$bedCharges.totalSanitizationCharges", 0] },
+                        { $eq: ["$bedCharges.totalSanitizationCharges", []] },
+                      ],
+                    },
+                    then: 0,
+                    else: { $sum: "$bedCharges.totalSanitizationCharges" },
+                  },
+                },
+                {
+                  $cond: {
+                    if: {
+                      $or: [{ $eq: ["$days", null] }, { $eq: ["$days", 0] }],
+                    },
+                    then: 0,
+                    else: {
                       $multiply: ["$days", "$bedData.sanitizationCharges"],
                     },
                   },
-                  {
-                    case: { $gt: [{ $size: "$allBeds" }, 1] },
-                    then: {
-                      $sum: "$bedCharges.totalSanitizationCharges",
-                    },
-                  },
-                ],
-              },
+                },
+              ],
             },
           },
         },
@@ -2102,10 +2226,13 @@ Router.get("/IPDPatient-Balance-GET/:Id", async (req, res) => {
             bedData: 1,
             bedCharges: 1,
             singleBedData: 1,
+            ipdPatientReturnMedicine: {
+              $ifNull: ["$ipdPatientReturnMedicine", []],
+            },
             days: 1,
             totalDays: 1,
             bedTotalCharges: 1,
-            ipdPatientIsInsured:1,
+            ipdPatientIsInsured: 1,
             nursingTotalCharges: {
               $cond: {
                 if: { $eq: ["$ipdPatientIsInsured", false] },

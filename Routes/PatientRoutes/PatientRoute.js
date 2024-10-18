@@ -94,19 +94,6 @@ router.get("/Patient-GET-ALL", async (req, res) => {
 
   try {
     const skip = (Number(page) - 1) * Number(limit);
-    // const Patients = await PatientModel.find({
-    //   patientName: { $regex: query, $options: "i" }, // Example search condition
-    // })
-    //   .skip(skip)
-    //   .limit(Number(limit));
-
-    // // const Patients = await PatientModel.find().skip(skip).limit(Number(limit));
-
-    // // const totalPatient = await PatientModel.countDocuments();
-    // const totalPatient = await PatientModel.countDocuments({
-    //   patientName: { $regex: query, $options: "i" },
-    // });
-
     if (limit) {
       const Patients = await PatientModel.aggregate([
         {
@@ -204,8 +191,10 @@ router.post(
       patientCareOfName,
       patientDateOfBirth,
       patientAge,
+      patientAgeMonth,
       patientPhone,
       patientPhone2,
+      patientAdharNumber,
       patientHeight,
       patientWeight,
       patientGender,
@@ -246,15 +235,15 @@ router.post(
       //     .json({ error: "Patient Already Exists With Same Email ID" });
       // }
 
-      const patientExistWithPhone = await PatientModel.findOne({
-        patientPhone: patientPhone,
-      });
+      // const patientExistWithPhone = await PatientModel.findOne({
+      //   patientPhone: patientPhone,
+      // });
 
-      if (patientExistWithPhone) {
-        return res
-          .status(422)
-          .json({ error: "Patient Already Exists With Same Mobile Number" });
-      }
+      // if (patientExistWithPhone) {
+      //   return res
+      //     .status(422)
+      //     .json({ error: "Patient Already Exists With Same Mobile Number" });
+      // }
 
       const newPatient = new PatientModel({
         patientId: await generateUniqueId(),
@@ -266,8 +255,10 @@ router.post(
         patientCareOfName: patientCareOfName,
         patientDateOfBirth: patientDateOfBirth,
         patientAge: patientAge,
+        patientAgeMonth: patientAgeMonth,
         patientPhone: patientPhone,
         patientPhone2: patientPhone2,
+        patientAdharNumber: patientAdharNumber,
         patientHeight: patientHeight,
         patientWeight: patientWeight,
         patientGender: patientGender,
@@ -292,6 +283,8 @@ router.post(
           res.json({ message: "Patient added successfully", data: data })
         );
     } catch (error) {
+      console.log(error);
+
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
@@ -313,8 +306,10 @@ router.put(
       patientCareOfName,
       patientDateOfBirth,
       patientAge,
+      patientAgeMonth,
       patientPhone,
       patientPhone2,
+      patientAdharNumber,
       patientHeight,
       patientWeight,
       patientGender,
@@ -397,10 +392,16 @@ router.put(
             ? patientDateOfBirth
             : PatientModel.patientDateOfBirth,
           patientAge: patientAge ? patientAge : PatientModel.patientAge,
+          patientAgeMonth: patientAgeMonth
+            ? patientAgeMonth
+            : PatientModel.patientAgeMonth,
           patientPhone: patientPhone ? patientPhone : PatientModel.patientPhone,
           patientPhone2: patientPhone2
             ? patientPhone2
             : PatientModel.patientPhone2,
+          patientAdharNumber: patientAdharNumber
+            ? patientAdharNumber
+            : PatientModel.patientAdharNumber,
           patientHeight: patientHeight
             ? patientHeight
             : PatientModel.patientHeight,
@@ -456,26 +457,6 @@ router.put(
     }
   }
 );
-
-// router.delete("/Patient-DELETE/:PatientId", async (req, res) => {
-//   const PatientId = req.params.PatientId;
-
-//   try {
-//     const Patient = await PatientModel.findOneAndDelete({
-//       patientId: PatientId,
-//     });
-
-//     if (!Patient) {
-//       return res.status(404).json("Patient not found to Delete");
-//     }
-
-//     return res
-//       .status(200)
-//       .json({ message: `Patient with Id: ${PatientId} deleted successfully!` });
-//   } catch (error) {
-//     res.status(500).json("Internal Server Error");
-//   }
-// });
 
 router.delete("/Patient-DELETE/:PatientId", async (req, res) => {
   const PatientId = req.params.PatientId;
