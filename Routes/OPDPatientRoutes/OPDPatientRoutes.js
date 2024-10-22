@@ -701,5 +701,33 @@ Router.get("/download-opd-list/:date", async (req, res) => {
     res.status(500).send("Error fetching data");
   }
 });
-
+Router.get("/get-opd-data-with-patient-data/:mainId", async (req, res) => {
+  const mainId = req.params.mainId;
+  try {
+    if (!mainId || mainId === null || mainId === undefined) {
+      return res.status(404).json({ message: "No Opd Patient Id Provided" });
+    }
+    const opdPatientData = await OPDPatientModel.aggregate([
+      {
+        $match: {
+          mainId: mainId,
+        },
+      },
+      {
+        $lookup: {
+          from: "patients",
+          localField: "opdPatientId",
+          foreignField: "patientId",
+          as: "patientData",
+        },
+      },
+      
+    ]);
+    return res
+      .status(200)
+      .json({ message: "Opd Data Fetch Succesfully", data: opdPatientData?.[0] });
+  } catch (error) {
+    res.status(500).json("internal server error");
+  }
+});
 module.exports = Router;

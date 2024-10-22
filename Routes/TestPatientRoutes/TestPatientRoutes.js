@@ -298,4 +298,47 @@ Router.delete("/TestOfPatient-DELETE/:Id", async (req, res) => {
   }
 });
 
+Router.post(
+  "/add-discount-test/:testPatientId",
+  upload.none(),
+  async (req, res) => {
+    const testPatientId = req.params.testPatientId;
+    const { discountPercentage, discountGivenBy } = req.body;
+
+    try {
+      const isTestPatientAvaliable = await TestPatientModel.findOne({
+        mainId: testPatientId,
+      });
+      if (!isTestPatientAvaliable || isTestPatientAvaliable?.length === 0) {
+        return res.status(404).json({ message: "No Test Patient Found" });
+      }
+      const totalFess = isTestPatientAvaliable?.total;
+      const discountPercentageByDoctor = discountPercentage;
+      const discountAmount = totalFess * (discountPercentageByDoctor / 100);
+      const testPatientData = await TestPatientModel.findOneAndUpdate(
+        {
+          mainId: testPatientId,
+        },
+        {
+          $set: {
+            discountPercentage: discountPercentage,
+            refundedAmount: discountAmount,
+            finalChargedAmount: totalFess - discountAmount,
+            discountGivenBy:discountGivenBy,
+            discountAmount:discountAmount,
+          },
+        },
+        { new: true }
+      );
+      return res.status(201).json({
+        message: "Discount Given Successfully",
+        data: testPatientData,
+      });
+    } catch (error) {
+      console.log(error);
+
+      return res.status(500).json("internal server error");
+    }
+  }
+);
 module.exports = Router;

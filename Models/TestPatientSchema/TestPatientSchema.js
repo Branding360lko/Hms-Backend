@@ -1,3 +1,4 @@
+const { types } = require("joi");
 const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
@@ -36,6 +37,25 @@ const TestPatientSchema = new Schema(
         },
       },
     ],
+    discountPercentage: {
+      type: Number,
+      default: 0,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+    },
+    refundedAmount: {
+      type: Number,
+      default: 0,
+    },
+    finalChargedAmount: {
+      type: Number,
+      default: 0,
+    },
+    discountGivenBy: {
+      type: String,
+    },
     total: {
       type: Number,
       default: 0,

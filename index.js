@@ -122,6 +122,7 @@ app.use(
 app.use("/api/", require("./Routes/VitalCareRoutes/VitalCareRoutes"));
 app.use("/api/", require("./Routes/IPDRoutes/IPDVitalRoutes"));
 app.use("/api/", require("./Routes/IPDRoutes/IPDReturnedMedicineRoutes"));
+app.use("/api/", require("./Routes/HospitalInventryRoutes/HospitalInventryRoutes"));
 app.get("/home", (req, res) => {
   res.send("this is hms main page");
 });

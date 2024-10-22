@@ -2497,6 +2497,7 @@ Router.put("/IPDPatient-PUT/:Id", async (req, res) => {
     ipdDepositAmount,
     // ipdWardNo,
     ipdFloorNo,
+    ipdPatientIsInsured,
     // ipdRoomNo,
     // ipdBedNo,
   } = req.body;
@@ -2520,6 +2521,9 @@ Router.put("/IPDPatient-PUT/:Id", async (req, res) => {
         ipdPatientNotes: ipdPatientNotes
           ? ipdPatientNotes
           : IPDPatientModel.ipdPatientNotes,
+        ipdPatientIsInsured: ipdPatientIsInsured
+          ? ipdPatientIsInsured
+          : IPDPatientModel.ipdPatientIsInsured,
       }
     );
 
