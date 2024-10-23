@@ -6,7 +6,9 @@ const { generateUniqueId } = require("../../utils/getUniqueId");
 
 Router.get("/get-all-hospital-inventry", async (req, res) => {
   try {
-    const HosiptalInventery = await HospitalInventry.find();
+    const HosiptalInventery = await HospitalInventry.find().sort({
+      createdAt: -1,
+    });
     if (!HosiptalInventery || HosiptalInventery?.length === 0) {
       return res.status(200).json({ message: "NO Inventry Data Found" });
     }
@@ -112,6 +114,8 @@ Router.put(
       CalibrationStatus,
       WhetherAmc,
     } = req.body;
+    console.log(WhetherAmc);
+
     try {
       if (
         !InventryId ||
